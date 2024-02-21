@@ -16,7 +16,7 @@ library TokenLibrary {
     function computePairAddress(Token token0, Token token1, address factory) internal pure returns (address) {
         return Create2.computeAddress(
             keccak256(abi.encodePacked(Token.unwrap(token0), Token.unwrap(token1))),
-            0xa57bca2368cab6b17271d49f841d97be4c13f1f2b216b066f5b3425e305375dd,
+            0x055070e0e796ae2b6c2f27913d8d6fcaa8bf006a4fcbb73f8b804ed17bd0fb4a,
             factory
         );
     }
