@@ -50,15 +50,10 @@ library TokenLibrary {
     }
 
     function safeTransferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
-        IERC20 tokenToTransfer = IERC20(Token.unwrap(token));
-
-        bytes memory returndata =
-            address(tokenToTransfer).functionCall(abi.encodeCall(tokenToTransfer.transferFrom, (from, to, value)));
-
-        if (returndata.length != 0 && !abi.decode(returndata, (bool))) {
+        try IERC20(Token.unwrap(token)).transferFrom(from, to, value) {
+            return true;
+        } catch {
             return false;
         }
-
-        return true;
     }
 }
