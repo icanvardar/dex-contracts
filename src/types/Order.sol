@@ -28,14 +28,14 @@ struct Order {
     uint256 timestamp;
 }
 
-/// @notice Order execution function parameters
-struct OrderCall {
+/// @notice function parameters of order execution
+struct ExecutionCall {
     Order order;
     bytes signature;
 }
 
-/// @notice Order execution function result
-struct OrderResult {
+/// @notice function result of order execution
+struct ExecutionResult {
     bool success;
     OrderStatus status;
 }
