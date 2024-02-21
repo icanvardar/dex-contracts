@@ -10,4 +10,8 @@ contract OrderManagerHarness is OrderManager {
     function exposed_executeOrder(ExecutionCall memory orderCall) external returns (ExecutionResult memory) {
         return _executeOrder66(orderCall);
     }
+
+    function exposed_signatures(bytes memory signature) external view returns (bool) {
+        return signatures[signature];
+    }
 }
