@@ -538,114 +538,100 @@ contract OrderManagerTest is Test {
         assertEq(uint8(result.status), uint8(OrderStatus.EXPIRED));
     }
 
-    //     function test_invalidStructure_path_length_ExecuteOrder() public deployAndSetHarnessContract {
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
+    function test_insufficient_liquidity_ExecuteOrder() public {
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
 
-    //         address[] memory path = new address[](3);
-    //         path[0] = address(token0);
-    //         path[1] = address(token1);
-    //         path[2] = address(weth);
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
 
-    //         Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
+        Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
 
-    //         OrderCall memory orderCall = OrderCall(order, signature);
+        OrderCall memory orderCall = OrderCall(order, signature);
 
-    //         OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
 
-    //         assertEq(result.success, false);
-    //         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
-    //     }
+        assertEq(result.success, false);
+        assertEq(uint8(result.status), uint8(OrderStatus.INSUFFICIENT_LIQUIDITY));
+    }
 
-    //     Bunu tekrar kontrol et !
-    //     function test_invalidStructure_orderFrom_zero_ExecuteOrder() public deployAndSetHarnessContract {
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
-    //         address orderFrom = address(0);
+    // Slippage to high
 
-    //         address[] memory path = new address[](2);
-    //         path[0] = address(token0);
-    //         path[1] = address(token1);
+    function test_slippage_ExecuteOrder() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
+        uint256 senderAddressAmount = 10e18;
 
-    //         Order memory order = Order(3e17, 1e17, path, orderFrom, senderAddress, deadline, block.timestamp);
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
 
-    //         OrderCall memory orderCall = OrderCall(order, signature);
+        uint256 amount1Out = RouterLib.getAmountOut(3e17, 1e18, 1e18);
 
-    //         OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        Order memory order =
+            Order(3e17, amount1Out + 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         assertEq(result.success, false);
-    //         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_SIGNATURE));
-    //     }
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
 
-    //     function test_invalidStructure_orderTo_zero_ExecuteOrder() public deployAndSetHarnessContract {
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
-    //         address orderTo = address(0);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
 
-    //         address[] memory path = new address[](2);
-    //         path[0] = address(token0);
-    //         path[1] = address(token1);
+        token0.transfer(senderAddress, senderAddressAmount);
 
-    //         Order memory order = Order(3e17, 1e17, path, senderAddress, orderTo, deadline, block.timestamp);
+        vm.prank(senderAddress);
+        token0.approve(address(orderManagerHarness), 3e17);
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+        OrderCall memory orderCall = OrderCall(order, signature);
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
 
-    //         OrderCall memory orderCall = OrderCall(order, signature);
+        assertEq(result.success, false);
+        assertEq(uint8(result.status), uint8(OrderStatus.SLIPPAGE_TOO_HIGH));
+    }
 
-    //         OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+    // Transfer fail check
 
-    //         assertEq(result.success, false);
-    //         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
-    //     }
+    function test_transfer_fail_ExecuteOrder() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
+        uint256 senderAddressAmount = 10e18;
 
-    //     function test_slippage_ExecuteOrder() public deployAndSetHarnessContract {
-    //         uint256 token0TransferAmount = 1e18;
-    //         uint256 token1TransferAmount = 1e18;
-    //         uint256 senderAddressAmount = 10e18;
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
 
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
 
-    //         address[] memory path = new address[](2);
-    //         path[0] = address(0x1);
-    //         path[1] = address(0x2);
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
 
-    //         _addLiquidity(token0TransferAmount, token1TransferAmount);
+        Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         uint256 amount1Out = RouterLib.getAmountOut(3e17, 1e18, 1e18);
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
 
-    //         Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+        token0.transfer(senderAddress, senderAddressAmount);
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        OrderCall memory orderCall = OrderCall(order, signature);
 
-    //         token0.transfer(senderAddress, senderAddressAmount);
+        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
 
-    //         vm.prank(senderAddress);
-    //         token0.approve(address(orderRouter), 3e17);
-
-    //         OrderCall memory orderCall = OrderCall(order, signature);
-
-    //         OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
-
-    //         assertEq(result.success, false);
-    //         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
-    //     }
+        assertEq(result.success, false);
+        assertEq(uint8(result.status), uint8(OrderStatus.TRANSFER_FAILED));
+    }
 
     //     function test_executeOrder66_ExecuteOrder() public {
     //         uint256 token0TransferAmount = 1e18;
