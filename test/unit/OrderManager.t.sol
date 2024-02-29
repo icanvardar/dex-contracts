@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 import { WETH } from "vectorized/solady/tokens/WETH.sol";
 import { Ownable } from "vectorized/solady/auth/Ownable.sol";
@@ -13,7 +12,7 @@ import { Router } from "../../src/helpers/Router.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { OrderManager } from "../../src/utils/OrderManager.sol";
-import { OrderCall, OrderResult, Order, OrderStatus } from "../../src/types/Order.sol";
+import { ExecutionCall, ExecutionResult, Order, OrderStatus } from "../../src/types/Order.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { OrderManagerHarness } from "../harness/OrderManagerHarness.sol";
@@ -50,8 +49,6 @@ contract OrderManagerTest is Test {
 
     event ExecutorAdded(address serviceAddress);
     event ExecutorRemoved(address serviceAddress);
-
-    receive() external payable { }
 
     constructor() { }
 
@@ -112,7 +109,7 @@ contract OrderManagerTest is Test {
         address[][] memory paths = new address[][](2);
         address[] memory senderAddress = new address[](2);
         Order[] memory orders = new Order[](2);
-        OrderCall[] memory orderCalls = new OrderCall[](2);
+        ExecutionCall[] memory executionCalls = new ExecutionCall[](2);
 
         senderAddress[0] = vm.addr(1);
         senderAddress[1] = vm.addr(2);
@@ -140,7 +137,7 @@ contract OrderManagerTest is Test {
         }
 
         for (uint256 i; i < signatures.length; i++) {
-            orderCalls[i] = OrderCall(orders[i], signatures[i]);
+            executionCalls[i] = ExecutionCall(orders[i], signatures[i]);
         }
 
         token0.transfer(senderAddress[0], senderAddressZero);
@@ -161,10 +158,10 @@ contract OrderManagerTest is Test {
         vm.prank(senderAddress[1]);
         token1.approve(address(orderManager), amount1Out);
 
-        OrderResult[] memory results = new OrderResult[](orderCalls.length);
+        ExecutionResult[] memory results = new ExecutionResult[](executionCalls.length);
 
         vm.prank(web2Service);
-        results = orderManager.batchExecuteOrder(orderCalls);
+        results = orderManager.batchExecuteOrder(executionCalls);
 
         for (uint256 i = 0; i < results.length; i++) {
             assertEq(results[i].success, true);
@@ -180,14 +177,15 @@ contract OrderManagerTest is Test {
         assertEq(weth.balanceOf(senderAddress[1]), amount2Out);
     }
 
-    function test_alreadyIssued_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_alreadyIssued_ExecuteOrder66() public {
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
         uint256 senderAddressAmount = 10e18;
 
+        bool signatureResult;
         bytes memory signature;
         address senderAddress = vm.addr(1);
-        OrderResult[] memory results = new OrderResult[](2);
+        ExecutionResult[] memory results = new ExecutionResult[](2);
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -202,7 +200,7 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
         token0.transfer(senderAddress, senderAddressAmount);
 
@@ -210,10 +208,10 @@ contract OrderManagerTest is Test {
         token0.approve(address(orderManagerHarness), 6e17);
 
         for (uint256 i = 0; i < results.length; i++) {
-            results[i] = orderManagerHarness.exposed_executeOrder(orderCall);
+            results[i] = orderManagerHarness.exposed_executeOrder(executionCall);
         }
 
-        bool signatureResult = orderManagerHarness.exposed_signatures(signature);
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
 
         assertEq(signatureResult, true);
         assertEq(results[0].success, true);
@@ -222,9 +220,10 @@ contract OrderManagerTest is Test {
         assertEq(uint8(results[1].status), uint8(OrderStatus.ALREADY_ISSUED));
     }
 
-    function test_validateStructure_path_length_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_validateStructure_path_length_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](3);
         path[0] = address(token0);
@@ -238,17 +237,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
     }
 
-    function test_validateStructure_orderFrom_zero_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_validateStructure_orderFrom_zero_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -261,17 +264,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
     }
 
-    function test_validateStructure_orderTo_zero_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_validateStructure_orderTo_zero_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -284,17 +291,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
     }
 
-    function test_validateStructure_identicalAddresses_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_validateStructure_identicalAddresses_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -307,17 +318,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
     }
 
-    function test_validateStructure_insufficientInputAmount_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_validateStructure_insufficientInputAmount_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -330,10 +345,13 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_STRUCTURE));
     }
@@ -346,8 +364,9 @@ contract OrderManagerTest is Test {
     //     signature v aynı ama r,s değerini değişince geçmiyor +
     //     signature boş olabilir +
 
-    function test_invalidSignature_recoverAddressIssue_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_invalidSignature_recoverAddressIssue_ExecuteOrder66() public {
         bytes memory signature;
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -360,17 +379,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_SIGNATURE));
     }
 
-    function test_invalidSignature_empty_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_invalidSignature_empty_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -380,18 +403,22 @@ contract OrderManagerTest is Test {
 
         signature = abi.encodePacked(bytes32(0), bytes32(0), uint8(0));
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_SIGNATURE));
     }
 
-    function test_invalidSignature_v_issue_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_invalidSignature_v_issue_ExecuteOrder66() public {
         bytes memory signature;
         uint8 wrongV = 1;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -404,17 +431,21 @@ contract OrderManagerTest is Test {
         (, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, wrongV);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_SIGNATURE));
     }
 
-    function test_invalidSignature_rs_notFound_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_invalidSignature_rs_notFound_ExecuteOrder66() public {
         bytes memory signature;
         address sender = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -427,20 +458,24 @@ contract OrderManagerTest is Test {
         (uint8 v,,) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, false);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INVALID_SIGNATURE));
     }
 
-    function test_invalidSignature_rs_different_ExecuteOrder66() public {
+    function test_ShouldBeSuccess_invalidSignature_rs_different_ExecuteOrder66() public {
         address sender = vm.addr(1);
 
         bytes[] memory signatures = new bytes[](2);
-        OrderResult[] memory results = new OrderResult[](2);
-        OrderCall[] memory orderCalls = new OrderCall[](2);
+        bool[] memory signatureResult = new bool[](2);
+        ExecutionResult[] memory results = new ExecutionResult[](2);
+        ExecutionCall[] memory executionCall = new ExecutionCall[](2);
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -455,11 +490,14 @@ contract OrderManagerTest is Test {
         signatures[1] = abi.encodePacked(bytes32(0), s, v);
 
         for (uint256 i; i < signatures.length; i++) {
-            orderCalls[i] = OrderCall(order, signatures[i]);
+            executionCall[i] = ExecutionCall(order, signatures[i]);
         }
 
         for (uint256 i = 0; i < results.length; i++) {
-            results[i] = orderManagerHarness.exposed_executeOrder(orderCalls[i]);
+            results[i] = orderManagerHarness.exposed_executeOrder(executionCall[i]);
+            signatureResult[i] = orderManagerHarness.exposed_signatures(signatures[i]);
+
+            assertEq(signatureResult[i], false);
             assertEq(results[i].success, false);
             assertEq(uint8(results[i].status), uint8(OrderStatus.INVALID_SIGNATURE));
         }
@@ -467,9 +505,10 @@ contract OrderManagerTest is Test {
 
     // Bu signature ve order valid ama token address sıkıntı olabilir.
 
-    function test_wrong_token_address0_ExecuteOrder() public {
+    function test_ShouldBeSuccess_wrong_token_address0_ExecuteOrder66() public {
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(0);
@@ -482,17 +521,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.WRONG_TOKEN_ADDRESS));
     }
 
-    function test_wrong_token_address1_ExecuteOrder() public {
+    function test_ShouldBeSuccess_wrong_token_address1_ExecuteOrder66() public {
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -505,19 +548,23 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.WRONG_TOKEN_ADDRESS));
     }
 
     // Dealine süresi geçmiş olabilir.
 
-    function test_expired_ExecuteOrder() public {
+    function test_ShouldBeSuccess_expired_ExecuteOrder66() public {
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -530,17 +577,21 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.EXPIRED));
     }
 
-    function test_insufficient_liquidity_ExecuteOrder() public {
+    function test_ShouldBeSuccess_insufficient_liquidity_ExecuteOrder66() public {
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -553,23 +604,27 @@ contract OrderManagerTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
         signature = abi.encodePacked(r, s, v);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.INSUFFICIENT_LIQUIDITY));
     }
 
     // Slippage to high
 
-    function test_slippage_ExecuteOrder() public {
+    function test_ShouldBeSuccess_slippage_ExecuteOrder66() public {
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
         uint256 senderAddressAmount = 10e18;
 
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -592,23 +647,27 @@ contract OrderManagerTest is Test {
         vm.prank(senderAddress);
         token0.approve(address(orderManagerHarness), 3e17);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.SLIPPAGE_TOO_HIGH));
     }
 
     // Transfer fail check
 
-    function test_transfer_fail_ExecuteOrder() public {
+    function test_ShouldBeSuccess_transfer_fail_ExecuteOrder66() public {
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
         uint256 senderAddressAmount = 10e18;
 
         bytes memory signature;
         address senderAddress = vm.addr(1);
+        bool signatureResult;
 
         address[] memory path = new address[](2);
         path[0] = address(token0);
@@ -625,201 +684,275 @@ contract OrderManagerTest is Test {
 
         token0.transfer(senderAddress, senderAddressAmount);
 
-        OrderCall memory orderCall = OrderCall(order, signature);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-        OrderResult memory result = orderManagerHarness.exposed_executeOrder(orderCall);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
         assertEq(result.success, false);
         assertEq(uint8(result.status), uint8(OrderStatus.TRANSFER_FAILED));
     }
 
-    //     function test_executeOrder66_ExecuteOrder() public {
-    //         uint256 token0TransferAmount = 1e18;
-    //         uint256 token1TransferAmount = 1e18;
-    //         uint256 senderAddressAmount = 10e18;
+    function test_ShouldBeSuccess_transfer_fail_no_amount_ExecuteOrder66() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
 
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
-    //         bool result;
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
+        bool signatureResult;
 
-    //         address[] memory path = new address[](2);
-    //         path[0] = address(token0);
-    //         path[1] = address(token1);
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
 
-    //         OrderValidator.Order memory order =
-    //             OrderValidator.Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderValidatorHarness));
+        Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
 
-    //         token0.transfer(senderAddress, senderAddressAmount);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
 
-    //         _addLiquidity(token0TransferAmount, token1TransferAmount);
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-    //         vm.prank(senderAddress);
-    //         token0.approve(address(orderValidatorHarness), 6e17);
+        vm.prank(senderAddress);
+        token0.approve(address(orderManagerHarness), 6e17);
 
-    //         vm.expectEmit(true, true, true, true);
-    //         emit OrderExecuted(order.amountIn, order.amountOutMin, order.path, order.from, order.to);
-    //         result = orderValidatorHarness.exposed_executeOrder(order, signature);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
-    //         assertEq(result, true);
-    //     }
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
 
-    //     function test_CheckOrderSignature() public {
-    //         bytes memory signature;
-    //         address senderAddress = vm.addr(1);
-    //         bool result;
+        assertEq(signatureResult, true);
+        assertEq(result.success, false);
+        assertEq(uint8(result.status), uint8(OrderStatus.TRANSFER_FAILED));
+    }
 
-    //         address[] memory path = new address[](2);
-    //         path[0] = address(token0);
-    //         path[1] = address(token1);
+    function test_ShouldBeSuccess_filled_ExecuteOrder66() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
+        uint256 senderAddressAmount = 10e18;
 
-    //         OrderValidator.Order memory order =
-    //             OrderValidator.Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
+        bool signatureResult;
 
-    //         bytes32 permitMeesageHash = _getPermitHash(order, address(orderValidatorHarness));
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
 
-    //         (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //         signature = abi.encodePacked(r, s, v);
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
 
-    //         result = orderValidatorHarness.exposed_checkOrderSignature(order, signature);
+        Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         assertEq(result, true);
-    //     }
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
 
-    //     function test_domainNameAndVersion() public {
-    //         (string memory name, string memory version) = orderValidatorHarness.exposed_domainNameAndVersion();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
 
-    //         assertEq(name, "Order Validator");
-    //         assertEq(version, "1");
-    //     }
+        token0.transfer(senderAddress, senderAddressAmount);
 
-    //     function test_ShouldBeSuccess_AddExecutor() public {
-    //         vm.expectEmit(true, false, false, false);
-    //         emit ExecutorAdded(address(0x1));
-    //         orderManager.addExecutor(address(0x1));
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
 
-    //         assertEq(orderManager.executors(address(0x1)), true);
-    //     }
+        vm.prank(senderAddress);
+        token0.approve(address(orderManagerHarness), 6e17);
 
-    //     function test_ShouldBeSuccess_RemoveExecutor() public {
-    //         vm.expectEmit(true, false, false, false);
-    //         emit ExecutorRemoved(web2Service);
-    //         orderManager.removeExecutor(web2Service);
+        vm.expectEmit(true, true, true, true);
+        emit OrderExecuted(order.amountIn, order.amountOutMin, order.path, order.from, order.to);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
 
-    //         assertEq(orderManager.executors(web2Service), false);
-    //     }
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
 
-    //     function test_ShouldBeSuccess_SetOrderRouter() public {
-    //         address prevRouter = orderManager.orderRouter();
-    //         address newRouter = address(0x1);
+        assertEq(signatureResult, true);
+        assertEq(result.success, true);
+        assertEq(uint8(result.status), uint8(OrderStatus.FILLED));
+    }
 
-    //         vm.expectEmit(true, false, false, false);
-    //         emit SetOrderRouter(prevRouter, newRouter);
-    //         orderManager.setOrderRouter(newRouter);
+    function test_ShouldBeSuccess_executeOrder66_ExecuteOrder66() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
+        uint256 senderAddressAmount = 10e18;
 
-    //         assertEq(orderManager.orderRouter(), newRouter);
-    //     }
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
+        bool signatureResult;
+
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
+
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
+
+        Order memory order = Order(3e17, 1e17, path, senderAddress, senderAddress, deadline, block.timestamp);
+
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
+
+        token0.transfer(senderAddress, senderAddressAmount);
+
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
+
+        vm.prank(senderAddress);
+        token0.approve(address(orderManagerHarness), 6e17);
+
+        vm.expectEmit(true, true, true, true);
+        emit OrderExecuted(order.amountIn, order.amountOutMin, order.path, order.from, order.to);
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
+
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
+        assertEq(result.success, true);
+        assertEq(uint8(result.status), uint8(OrderStatus.FILLED));
+    }
+
+    function test_ShouldBeSuccess_execution_fail_ExecuteOrder66() public {
+        uint256 token0TransferAmount = 1e18;
+        uint256 token1TransferAmount = 1e18;
+        uint256 senderAddressAmount = 10e18;
+
+        bytes memory signature;
+        address senderAddress = vm.addr(1);
+        bool signatureResult;
+
+        _addLiquidity(token0TransferAmount, token1TransferAmount);
+
+        address[] memory path = new address[](2);
+        path[0] = address(token0);
+        path[1] = address(token1);
+
+        Order memory order = Order(10e18, 1e17, path, senderAddress, address(token0), deadline, block.timestamp);
+
+        bytes32 permitMeesageHash = _getPermitHash(order, address(orderManagerHarness));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+        signature = abi.encodePacked(r, s, v);
+
+        token0.transfer(senderAddress, senderAddressAmount);
+
+        ExecutionCall memory executionCall = ExecutionCall(order, signature);
+
+        vm.prank(senderAddress);
+        token0.approve(address(orderManagerHarness), 10e18);
+
+        ExecutionResult memory result = orderManagerHarness.exposed_executeOrder(executionCall);
+
+        signatureResult = orderManagerHarness.exposed_signatures(signature);
+
+        assertEq(signatureResult, true);
+        assertEq(result.success, false);
+        assertEq(uint8(result.status), uint8(OrderStatus.EXECUTION_FAILED));
+    }
+
+    function test_ShouldBeSuccess_AddExecutor() public {
+        vm.expectEmit(true, false, false, false);
+        emit ExecutorAdded(address(0x1));
+        orderManager.addExecutor(address(0x1));
+
+        assertEq(orderManager.executors(address(0x1)), true);
+    }
+
+    function test_ShouldBeSuccess_RemoveExecutor() public {
+        vm.expectEmit(true, false, false, false);
+        emit ExecutorRemoved(web2Service);
+        orderManager.removeExecutor(web2Service);
+
+        assertEq(orderManager.executors(web2Service), false);
+    }
 
     //     /*//////////////////////////////////////////////////////////////////////////
     //                                       REVERTS
     //     ////////////////////////////////////////////////////////////////////////*/
 
-    //     function test_Revert_emptyOrdersNotSupported_BatchExecuteOrder() public {
-    //         OrderCall[] memory orderCalls = new OrderCall[](0);
+    function test_Revert_emptyOrdersNotSupported_BatchExecuteOrder() public {
+        ExecutionCall[] memory ExecutionCalls = new ExecutionCall[](0);
 
-    //         vm.prank(web2Service);
-    //         vm.expectRevert(OrderManager.EmptyOrdersNotSupported.selector);
-    //         orderManager.batchExecuteOrder(orderCalls);
-    //     }
+        vm.prank(web2Service);
+        vm.expectRevert(OrderManager.EmptyOrdersNotSupported.selector);
+        orderManager.batchExecuteOrder(ExecutionCalls);
+    }
 
-    //     function test_Revert_chunkSizeExceeded_BatchExecuteOrder() public {
-    //         address senderAddress = vm.addr(1);
-    //         bytes[] memory signatures = new bytes[](3);
-    //         address[][] memory paths = new address[][](1);
-    //         Order[] memory orders = new Order[](3);
+    function test_Revert_chunkSizeExceeded_BatchExecuteOrder() public {
+        address senderAddress = vm.addr(1);
+        bytes[] memory signatures = new bytes[](3);
+        address[][] memory paths = new address[][](1);
+        Order[] memory orders = new Order[](3);
 
-    //         uint256 amount1Out = RouterLib.getAmountOut(3e17, 1e18, 1e18);
-    //         uint256 amount2Out = RouterLib.getAmountOut(amount1Out, 1e18, 1e18);
+        uint256 amount1Out = RouterLib.getAmountOut(3e17, 1e18, 1e18);
+        uint256 amount2Out = RouterLib.getAmountOut(amount1Out, 1e18, 1e18);
 
-    //         paths[0] = new address[](2);
+        paths[0] = new address[](2);
 
-    //         paths[0][0] = address(token0);
-    //         paths[0][1] = address(token1);
+        paths[0][0] = address(token0);
+        paths[0][1] = address(token1);
 
-    //         orders[0] = Order(3e17, 1e17, paths[0], senderAddress, senderAddress, deadline, block.timestamp);
-    //         orders[1] = Order(amount1Out, amount2Out, paths[0], senderAddress, senderAddress, deadline,
-    // block.timestamp);
-    //         orders[2] = Order(amount1Out, amount2Out, paths[0], senderAddress, senderAddress, deadline,
-    // block.timestamp);
+        orders[0] = Order(3e17, 1e17, paths[0], senderAddress, senderAddress, deadline, block.timestamp);
+        orders[1] = Order(amount1Out, amount2Out, paths[0], senderAddress, senderAddress, deadline, block.timestamp);
+        orders[2] = Order(amount1Out, amount2Out, paths[0], senderAddress, senderAddress, deadline, block.timestamp);
 
-    //         for (uint256 i; i < signatures.length; i++) {
-    //             bytes32 permitMeesageHash = _getPermitHash(orders[i], address(orderManager));
-    //             (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
-    //             signatures[i] = abi.encodePacked(r, s, v);
-    //         }
+        for (uint256 i; i < signatures.length; i++) {
+            bytes32 permitMeesageHash = _getPermitHash(orders[i], address(orderManager));
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(1, permitMeesageHash);
+            signatures[i] = abi.encodePacked(r, s, v);
+        }
 
-    //         OrderCall[] memory orderCalls = new OrderCall[](signatures.length);
+        ExecutionCall[] memory executionCalls = new ExecutionCall[](signatures.length);
 
-    //         for (uint256 i; i < signatures.length; i++) {
-    //             orderCalls[i] = OrderCall(orders[i], signatures[i]);
-    //         }
+        for (uint256 i; i < signatures.length; i++) {
+            executionCalls[i] = ExecutionCall(orders[i], signatures[i]);
+        }
 
-    //         vm.prank(web2Service);
-    //         vm.expectRevert(OrderManager.ChunkSizeExceeded.selector);
-    //         orderManager.batchExecuteOrder(orderCalls);
-    //     }
+        vm.prank(web2Service);
+        vm.expectRevert(OrderManager.ChunkSizeExceeded.selector);
+        orderManager.batchExecuteOrder(executionCalls);
+    }
 
-    //     function test_Revert_isExecutor_BatchExecuteOrder() public {
-    //         OrderCall[] memory orders = new OrderCall[](1);
+    function test_Revert_isExecutor_BatchExecuteOrder() public {
+        ExecutionCall[] memory orders = new ExecutionCall[](1);
 
-    //         vm.expectRevert(OrderManager.OnlyExecutor.selector);
-    //         orderManager.batchExecuteOrder(orders);
-    //     }
+        vm.expectRevert(OrderManager.OnlyExecutor.selector);
+        orderManager.batchExecuteOrder(orders);
+    }
 
-    //     function test_Revert_onlyOwner_AddExecutor() public {
-    //         address caller = address(0x1);
+    function test_Revert_onlyOwner_AddExecutor() public {
+        address caller = address(0x1);
 
-    //         vm.prank(caller);
-    //         vm.expectRevert(Ownable.Unauthorized.selector);
-    //         orderManager.addExecutor(address(0x1));
-    //     }
+        vm.prank(caller);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        orderManager.addExecutor(address(0x1));
+    }
 
-    //     function test_Revert_noZeroAddress_AddExecutor() public {
-    //         vm.expectRevert(OrderManager.NoZeroAddress.selector);
-    //         orderManager.addExecutor(address(0));
-    //     }
+    function test_Revert_noZeroAddress_AddExecutor() public {
+        vm.expectRevert(OrderManager.NoZeroAddress.selector);
+        orderManager.addExecutor(address(0));
+    }
 
-    //     function test_Revert_executorAlreadySet_AddExecutor() public {
-    //         vm.expectRevert(OrderManager.ExecutorAlreadySet.selector);
-    //         orderManager.addExecutor(web2Service);
-    //     }
+    function test_Revert_executorAlreadySet_AddExecutor() public {
+        vm.expectRevert(OrderManager.ExecutorAlreadySet.selector);
+        orderManager.addExecutor(web2Service);
+    }
 
-    //     function test_Revert_onlyOwner_RemoveExecutor() public {
-    //         address caller = address(0x1);
+    function test_Revert_onlyOwner_RemoveExecutor() public {
+        address caller = address(0x1);
 
-    //         vm.prank(caller);
-    //         vm.expectRevert(Ownable.Unauthorized.selector);
-    //         orderManager.removeExecutor(address(0x1));
-    //     }
+        vm.prank(caller);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        orderManager.removeExecutor(address(0x1));
+    }
 
-    //     function test_Revert_noZeroAddress_RemoveExecutor() public {
-    //         vm.expectRevert(OrderManager.NoZeroAddress.selector);
-    //         orderManager.removeExecutor(address(0));
-    //     }
+    function test_Revert_noZeroAddress_RemoveExecutor() public {
+        vm.expectRevert(OrderManager.NoZeroAddress.selector);
+        orderManager.removeExecutor(address(0));
+    }
 
-    //     function test_Revert_noExecutorAddress_RemoveExecutor() public {
-    //         vm.expectRevert(OrderManager.NoExecutorAddress.selector);
-    //         orderManager.removeExecutor(address(0x1));
-    //     }
-
-    //     function test_Revert_noZeroAddress_SetOrderRouter() public {
-    //         vm.expectRevert(OrderManager.NoZeroAddress.selector);
-    //         orderManager.setOrderRouter(address(0));
-    //     }
+    function test_Revert_noExecutorAddress_RemoveExecutor() public {
+        vm.expectRevert(OrderManager.NoExecutorAddress.selector);
+        orderManager.removeExecutor(address(0x1));
+    }
 
     //     /*//////////////////////////////////////////////////////////////////////////
     //                                       HELPERS
