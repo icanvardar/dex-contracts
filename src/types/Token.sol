@@ -10,8 +10,6 @@ type Token is address;
 
 using TokenLibrary for Token global;
 
-using Address for address;
-
 library TokenLibrary {
     function computePairAddress(Token token0, Token token1, address factory) internal pure returns (address) {
         return Create2.computeAddress(
@@ -49,7 +47,7 @@ library TokenLibrary {
         return (amountIn, amountOut);
     }
 
-    function safeTransferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
+    function transferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
         try IERC20(Token.unwrap(token)).transferFrom(from, to, value) {
             return true;
         } catch {

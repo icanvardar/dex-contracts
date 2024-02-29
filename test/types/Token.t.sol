@@ -101,7 +101,7 @@ contract TokenTest is Test {
         bool result;
 
         token0.approve(address(this), 3e17);
-        result = Token.wrap(path[0]).safeTransferFrom(address(this), createdPairAddress, amountInAmount);
+        result = Token.wrap(path[0]).transferFrom(address(this), createdPairAddress, amountInAmount);
 
         assertEq(token0.balanceOf(createdPairAddress), amountInAmount);
         assertEq(result, true);
@@ -114,7 +114,7 @@ contract TokenTest is Test {
 
         vm.startPrank(sender);
         token0.approve(address(this), 3e17);
-        result = Token.wrap(path[0]).safeTransferFrom(address(this), createdPairAddress, amountInAmount);
+        result = Token.wrap(path[0]).transferFrom(address(this), createdPairAddress, amountInAmount);
 
         assertEq(result, false);
     }
