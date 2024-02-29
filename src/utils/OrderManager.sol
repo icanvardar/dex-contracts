@@ -205,7 +205,7 @@ contract OrderManager is OrderValidator, Ownable {
             return ExecutionResult(false, OrderStatus.SLIPPAGE_TOO_HIGH);
         }
 
-        if (!Token.wrap(order.path[0]).safeTransferFrom(order.from, pairAddress, amountIn)) {
+        if (!Token.wrap(order.path[0]).transferFrom(order.from, pairAddress, amountIn)) {
             return ExecutionResult(false, OrderStatus.TRANSFER_FAILED);
         }
 
