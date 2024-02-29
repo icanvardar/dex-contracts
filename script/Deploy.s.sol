@@ -56,8 +56,8 @@ contract Deploy is BaseScript {
         AddressPayload memory addressPayload = readAddressesFromFile();
         address feeToSetter = addressPayload.feeToSetter;
         deadline = block.timestamp + 1000;
-        uint256 token0TransferAmount = 1e18;
-        uint256 token1TransferAmount = 1e18;
+        uint256 token0TransferAmount = 1_000_000e18;
+        uint256 token1TransferAmount = 1_000_000e18;
 
         //address wethAddress = addressPayload.weth;
         // if (wethAddress == address(0) || feeToSetter == address(0)) {
