@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 
-import { Token } from "./../../src/types/Token.sol";
+import { Token } from "../../src/types/Token.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { Order, OrderLibrary } from "../../src/types/Order.sol";
 

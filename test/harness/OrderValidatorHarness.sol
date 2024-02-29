@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
-import { OrderValidator } from "./../../src/helpers/OrderValidator.sol";
+import { OrderValidator } from "../../src/helpers/OrderValidator.sol";
 import { Order } from "../../src/types/Order.sol";
 
 contract OrderValidatorHarness is OrderValidator {

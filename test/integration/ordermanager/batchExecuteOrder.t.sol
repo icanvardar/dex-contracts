@@ -6,14 +6,14 @@ import { Test } from "forge-std/Test.sol";
 import { WETH } from "vectorized/solady/tokens/WETH.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-import { Pair } from "./../../../../src/core/Pair.sol";
-import { Router } from "./../../../../src/helpers/Router.sol";
-import { PairFactory } from "./../../../../src/core/PairFactory.sol";
-import { RouterLib } from "../../../../../src/libraries/RouterLib.sol";
-import { OrderManager } from "./../../../../src/utils/OrderManager.sol";
-import { ExecutionCall, ExecutionResult, Order } from "./../../../../src/types/Order.sol";
+import { Pair } from "../../../src/core/Pair.sol";
+import { Router } from "../../../src/helpers/Router.sol";
+import { PairFactory } from "../../../src/core/PairFactory.sol";
+import { RouterLib } from "../../../src/libraries/RouterLib.sol";
+import { OrderManager } from "../../../src/utils/OrderManager.sol";
+import { ExecutionCall, ExecutionResult, Order } from "../../../src/types/Order.sol";
 
-import { MockERC20 } from "./../../../../test/mocks/MockERC20.sol";
+import { MockERC20 } from "../../mocks/MockERC20.sol";
 
 contract BatchExecuteOrder_Integration_Test is Test {
     uint256 public constant TOKEN_A_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;

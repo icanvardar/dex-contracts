@@ -3,9 +3,9 @@ pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 
-import { OrderTypedHash } from "./../../src/types/OrderTypedHash.sol";
-import { Order } from "./../../src/types/Order.sol";
-import { RouterLib } from "./../../src/libraries/RouterLib.sol";
+import { OrderTypedHash } from "../../src/types/OrderTypedHash.sol";
+import { Order } from "../../src/types/Order.sol";
+import { RouterLib } from "../../src/libraries/RouterLib.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 

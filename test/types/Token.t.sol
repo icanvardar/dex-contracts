@@ -3,13 +3,13 @@ pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 
-import { Pair } from "./../../src/core/Pair.sol";
-import { Token } from "./../../src/types/Token.sol";
-import { Order } from "./../../src/types/Order.sol";
-import { Router } from "./../../src/helpers/Router.sol";
+import { Pair } from "../../src/core/Pair.sol";
+import { Token } from "../../src/types/Token.sol";
+import { Order } from "../../src/types/Order.sol";
+import { Router } from "../../src/helpers/Router.sol";
 import { WETH } from "vectorized/solady/tokens/WETH.sol";
-import { PairFactory } from "./../../src/core/PairFactory.sol";
-import { RouterLib } from "./../../src/libraries/RouterLib.sol";
+import { PairFactory } from "../../src/core/PairFactory.sol";
+import { RouterLib } from "../../src/libraries/RouterLib.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 
