@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 interface IRouter {
     function factory() external view returns (address);
-
     function addLiquidity(
         address tokenA,
         address tokenB,
