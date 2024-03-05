@@ -8,3 +8,4 @@ fi
 
 # Run the forge script command with the provided rpc-url argument
 forge script script/Deploy.s.sol:Deploy --broadcast --rpc-url "$1" -vvvv
+ 
