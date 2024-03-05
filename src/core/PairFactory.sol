@@ -11,18 +11,42 @@ import { Pair } from "./Pair.sol";
  * in a decentralized exchange. It also provides functions to set fees and fee recipients.
  */
 contract PairFactory {
-    address public feeTo;
-    address public feeToSetter;
-    address[] public allPairs;
+    /*//////////////////////////////////////////////////////////////////////////
+                                   PUBLIC STORAGE
+    //////////////////////////////////////////////////////////////////////////*/
 
+    /// @notice Address of the recipient for trading fees
+    address public feeTo;
+    /// @notice Address that can update the feeTo address
+    address public feeToSetter;
+    /// @notice Array containing addresses of all pairs created by the factory
+    address[] public allPairs;
+    /// @notice Mapping to get the pair contract address for a given pair of tokens
     mapping(address => mapping(address => address)) public getPair;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                   EVENTS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Emitted when a new pair contract is created
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                   ERRORS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Throws an error indicating that the provided addresses are identical
     error IdenticalAddresses();
+    /// @notice Throws an error indicating that an address provided is zero
     error ZeroAddress();
+    /// @notice Throws an error indicating that the pair already exists
     error PairExists();
+    /// @notice Throws an error indicating that the action is forbidden
     error Forbidden();
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                     CONSTRUCTOR
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Constructor initializes the Factory contract with the provided feeToSetter address.
@@ -32,6 +56,10 @@ contract PairFactory {
         feeToSetter = _feeToSetter;
     }
 
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
+
     /**
      * @dev Returns the length of allPairs array, representing the total number of created Pair contracts.
      * @return The length of allPairs array.
@@ -39,6 +67,10 @@ contract PairFactory {
     function allPairsLength() external view returns (uint256) {
         return allPairs.length;
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                         USER-FACING NON-CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Creates a new Pair contract for the given token pair, adds it to allPairs, and emits an event.
