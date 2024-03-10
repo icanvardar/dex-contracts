@@ -5,20 +5,28 @@ import { Test } from "forge-std/Test.sol";
 
 import { UQ112x112 } from "../../src/libraries/UQ112x112.sol";
 
-contract UQ112x112Test is Test {
+import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+
+contract UQ112x112FuzzTest is Test {
+    using SafeCastLib for uint112;
+
+    constructor() { }
+
+    function setUp() public { }
+
     function test_ShouldBeSuccess_Encode(uint112 value) public {
         uint224 encoded = UQ112x112.encode(value);
 
         assertEq(encoded / UQ112x112.Q112, value);
     }
 
-    // function test_ShouldBeSuccess_Uqdiv(uint256 _value, uint256 _denominator) public {
-    //     uint256 value = bound(_value, 1, 2 ** 112 - 1);
-    //     uint256 denominator = bound(_denominator, 0, 2 ** 112 - 1);
+    function test_uqdiv(uint224 x, uint112 y) public {
+        vm.assume(y > 0);
 
-    //     uint224 encoded = UQ112x112.encode(uint112(value));
-    //     uint224 divided = UQ112x112.uqdiv(encoded, uint112(denominator));
+        uint224 expected = x / y.toUint224();
 
-    //     assertEq(divided * UQ112x112.encode(uint112(denominator)), encoded);
-    // }
+        uint224 actual = UQ112x112.uqdiv(x, y);
+
+        assertEq(actual, expected);
+    }
 }

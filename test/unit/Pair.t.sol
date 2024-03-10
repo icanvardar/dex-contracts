@@ -4,6 +4,8 @@ pragma solidity 0.8.21;
 import { Test } from "forge-std/Test.sol";
 import { stdError } from "forge-std/StdError.sol";
 
+import "forge-std/console.sol";
+
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";

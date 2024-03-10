@@ -1,6 +1,6 @@
 {
   "name": "@tokenize-technology/dex-contracts",
-  "description": "",
+  "description": "Smart contracts of Dex",
   "version": "1.0.0",
   "author": {
     "name": "tokenize-technology",

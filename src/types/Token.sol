@@ -10,7 +10,22 @@ type Token is address;
 
 using TokenLibrary for Token global;
 
+/**
+ * @title TokenLibrary
+ * @dev A library for handling token-related operations.
+ */
 library TokenLibrary {
+    /*//////////////////////////////////////////////////////////////////////////
+                             INTERNAL CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Computes the address of a pair contract for two tokens using the given factory address.
+     * @param token0 The address of the first token.
+     * @param token1 The address of the second token.
+     * @param factory The address of the factory contract.
+     * @return The computed address of the pair contract.
+     */
     function computePairAddress(Token token0, Token token1, address factory) internal pure returns (address) {
         return Create2.computeAddress(
             keccak256(abi.encodePacked(Token.unwrap(token0), Token.unwrap(token1))),
@@ -19,7 +34,14 @@ library TokenLibrary {
         );
     }
 
-    // prototype of swapExactTokensForTokens function in uniswap v2 router
+    /**
+     * @dev Calculates the amount of output token for a given input token amount in a pair.
+     * @param token0 The address of the first token in the pair.
+     * @param pairAddress The address of the pair contract.
+     * @param amountIn The amount of input token.
+     * @param input The address of the input token.
+     * @return The amount of input and output tokens.
+     */
     function calculateAmounts(
         Token token0,
         address pairAddress,
@@ -47,6 +69,14 @@ library TokenLibrary {
         return (amountIn, amountOut);
     }
 
+    /**
+     * @dev Transfers tokens from the sender's account to another account.
+     * @param token The address of the token.
+     * @param from The address from which tokens will be transferred.
+     * @param to The address to which tokens will be transferred.
+     * @param value The amount of tokens to transfer.
+     * @return A boolean indicating whether the transfer was successful.
+     */
     function transferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
         try IERC20(Token.unwrap(token)).transferFrom(from, to, value) {
             return true;

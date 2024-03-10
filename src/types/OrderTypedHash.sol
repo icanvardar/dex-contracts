@@ -5,12 +5,22 @@ type OrderTypedHash is bytes32;
 
 using OrderTypedHashLibrary for OrderTypedHash global;
 
+/**
+ * @title OrderTypedHashLibrary
+ * @dev Library for verifying the signer's address from a message digest and a signature.
+ */
 library OrderTypedHashLibrary {
     /*//////////////////////////////////////////////////////////////////////////
                              INTERNAL CONSTANT FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-    /// @dev Verifies the signer's address from a message digest `hash`, and the `signature`.
+    /**
+     * @dev Verifies the signer's address from a message digest `hash`, and the `signature`.
+     * @param hash The hash of the order.
+     * @param signature The signature of the order.
+     * @param signer The expected signer address.
+     * @return A boolean indicating whether the signer's address is valid.
+     */
     function validateOrderSigner(
         OrderTypedHash hash,
         bytes memory signature,
@@ -22,7 +32,9 @@ library OrderTypedHashLibrary {
     {
         address recoveredAddress = address(1);
 
-        /// @solidity memory-safe-assembly
+        /**
+         * @solidity memory-safe-assembly
+         */
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
             for { } 1 { } {

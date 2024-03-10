@@ -13,13 +13,28 @@ import { IPair } from "../interfaces/IPair.sol";
 library RouterLib {
     using SafeCastLib for uint256;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                  ERRORS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Error indicating that two addresses provided are identical
     error IdenticalAddresses();
+    /// @notice Error indicating that an address provided is zero
     error ZeroAddress();
+    /// @notice Error indicating that there is insufficient liquidity for a transaction
     error InsufficientLiquidity();
+    /// @notice Error indicating that the output amount in a transaction is insufficient
     error InsufficientOutputAmount();
+    /// @notice Error indicating that the input amount in a transaction is insufficient
     error InsufficientInputAmount();
+    /// @notice Error indicating that the amount provided is insufficient for the operation
     error InsufficientAmount();
+    /// @notice Error indicating that the path provided for a transaction is invalid
     error InvalidPath();
+
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Returns the sorted order of two token addresses.

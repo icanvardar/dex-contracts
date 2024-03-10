@@ -15,19 +15,43 @@ import { RouterLib } from "../libraries/RouterLib.sol";
  * @dev Implementation of the IRouter interface. Handles token swaps and liquidity operations.
  */
 contract Router is IRouter {
+    /*//////////////////////////////////////////////////////////////////////////
+                                  PUBLIC CONSTANT
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Address of the recipient for trading fees
     address public immutable factory;
+    /// @notice Address of the recipient for trading fees
     address public immutable WETH;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                  ERRORS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Throws an error indicating that the deadline for a transaction has expired
     error DeadlineExpired();
+    /// @notice Throws an error indicating that the provided amount of token A is insufficient
     error InsufficientAAmount();
+    /// @notice Throws an error indicating that the provided amount of token B is insufficient
     error InsufficientBAmount();
+    /// @notice Throws an error indicating that the output amount is insufficient
     error InsufficientOutputAmount();
+    /// @notice Throws an error indicating that the input amount is excessive
     error ExcessiveInputAmount();
+    /// @notice Throws an error indicating that the provided amounts for token A and B do not match
     error MismatchedAmounts();
+    /// @notice Throws an error indicating that the provided token path is invalid
     error InvalidPath();
+    /// @notice Throws an error indicating that it's unable to send Ether
     error UnableToSendEther();
+    /// @notice Throws an error indicating that it's unable to transfer WETH
     error UnableToTransferWETH();
+    /// @notice Throws an error indicating that the sender is not allowed to perform the action
     error WrongSender();
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                  MODIFIER
+    //////////////////////////////////////////////////////////////////////////*/
 
     // Modifier to check if the deadline has not expired.
     modifier ensure(uint256 deadline) {
@@ -36,6 +60,10 @@ contract Router is IRouter {
         }
         _;
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                  CONSTRUCTOR
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Constructor to initialize the Router with the factory and WETH addresses.
@@ -46,6 +74,10 @@ contract Router is IRouter {
         factory = _factory;
         WETH = _WETH;
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                         USER-FACING NON-CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     // Fallback function to reject Ether from being sent directly to the contract.
     receive() external payable {
@@ -691,6 +723,11 @@ contract Router is IRouter {
             revert UnableToSendEther();
         }
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
+
     /**
      * @dev Provides the expected amount of tokens received for a given input amount, reserveA, and reserveB.
      * @param amountA Input amount.
@@ -698,7 +735,6 @@ contract Router is IRouter {
      * @param reserveB Reserve of token B in the pair.
      * @return amountB Expected amount of tokens received.
      */
-
     function quote(
         uint256 amountA,
         uint256 reserveA,
@@ -792,6 +828,10 @@ contract Router is IRouter {
     {
         return RouterLib.getAmountsIn(factory, amountOut, path);
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                           INTERNAL NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Internal function to add liquidity to a pair.

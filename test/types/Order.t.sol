@@ -123,7 +123,7 @@ contract OrderTest is Test {
                 ORDER_TYPEHASH,
                 order.amountIn,
                 order.amountOutMin,
-                order.path,
+                keccak256(abi.encodePacked(order.path)),
                 order.from,
                 order.to,
                 order.deadline,

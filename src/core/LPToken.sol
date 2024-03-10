@@ -8,6 +8,10 @@ import { ERC20 } from "vectorized/solady/tokens/ERC20.sol";
  * @dev A simple ERC20 token representing Liquidity Pool (LP) tokens.
  */
 contract LPToken is ERC20 {
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
     /**
      * @dev Returns the name of the token.
      * @return The name of the token.
