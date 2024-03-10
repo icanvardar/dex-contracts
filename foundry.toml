@@ -8,7 +8,6 @@
   evm_version = "paris"           # See https://www.evmdiff.com/features?name=PUSH0&kind=opcode
   fuzz = { runs = 1_000 }
   gas_reports = ["*"]
-  libs = ["lib"]
   optimizer = true
   optimizer_runs = 10_000
   out = "out"
@@ -21,16 +20,16 @@
   fuzz = { runs = 10_000 }
   verbosity = 4
 
-# [etherscan]
-#   arbitrum_one = { key = "${API_KEY_ARBISCAN}" }
-#   avalanche = { key = "${API_KEY_SNOWTRACE}" }
-#   bnb_smart_chain = { key = "${API_KEY_BSCSCAN}" }
-#   gnosis_chain = { key = "${API_KEY_GNOSISSCAN}" }
-#   goerli = { key = "${API_KEY_ETHERSCAN}" }
-#   mainnet = { key = "${API_KEY_ETHERSCAN}" }
-#   optimism = { key = "${API_KEY_OPTIMISTIC_ETHERSCAN}" }
-#   polygon = { key = "${API_KEY_POLYGONSCAN}" }
-#   sepolia = { key = "${API_KEY_ETHERSCAN}" }
+[etherscan]
+  arbitrum = { key = "${API_KEY_ARBISCAN}" }
+  avalanche = { key = "${API_KEY_SNOWTRACE}" }
+  bnb_smart_chain = { key = "${API_KEY_BSCSCAN}" }
+  gnosis_chain = { key = "${API_KEY_GNOSISSCAN}" }
+  goerli = { key = "${API_KEY_ETHERSCAN}" }
+  mainnet = { key = "${API_KEY_ETHERSCAN}" }
+  optimism = { key = "${API_KEY_OPTIMISTIC_ETHERSCAN}" }
+  polygon = { key = "${API_KEY_POLYGONSCAN}" }
+  sepolia = { key = "${API_KEY_ETHERSCAN}" }
 
 [fmt]
   bracket_spacing = true
@@ -43,7 +42,7 @@
   wrap_comments = true
 
 [rpc_endpoints]
-  arbitrum_one = "https://arbitrum-mainnet.infura.io/v3/${API_KEY_INFURA}"
+  arbitrum = "https://arbitrum-mainnet.infura.io/v3/${API_KEY_INFURA}"
   avalanche = "https://avalanche-mainnet.infura.io/v3/${API_KEY_INFURA}"
   bnb_smart_chain = "https://bsc-dataseed.binance.org"
   gnosis_chain = "https://rpc.gnosischain.com"
