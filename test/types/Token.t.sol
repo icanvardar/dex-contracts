@@ -7,7 +7,7 @@ import { Pair } from "../../src/core/Pair.sol";
 import { Token } from "../../src/types/Token.sol";
 import { Order } from "../../src/types/Order.sol";
 import { Router } from "../../src/helpers/Router.sol";
-import { WETH } from "vectorized/solady/tokens/WETH.sol";
+import { WETH } from "solady/tokens/WETH.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 

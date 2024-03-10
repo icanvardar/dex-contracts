@@ -6,7 +6,7 @@ import { stdError } from "forge-std/StdError.sol";
 
 import "forge-std/console.sol";
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";

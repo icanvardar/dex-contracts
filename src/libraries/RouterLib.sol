@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
-import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 
 import { IPair } from "../interfaces/IPair.sol";
 

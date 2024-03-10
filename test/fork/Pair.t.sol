@@ -4,9 +4,9 @@ pragma solidity 0.8.21;
 import { Test } from "forge-std/Test.sol";
 import { stdError } from "forge-std/StdError.sol";
 
-import { WETH } from "vectorized/solady/tokens/WETH.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { WETH } from "solady/tokens/WETH.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";

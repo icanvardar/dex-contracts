@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import { Test } from "forge-std/Test.sol";
 
 import { Router } from "../../src/helpers/Router.sol";
-import { WETH } from "vectorized/solady/tokens/WETH.sol";
+import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
 import { Pair } from "../../src/core/Pair.sol";

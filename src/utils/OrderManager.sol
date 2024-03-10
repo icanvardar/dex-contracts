@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import { Ownable } from "vectorized/solady/auth/Ownable.sol";
+import { Ownable } from "solady/auth/Ownable.sol";
 import { OrderValidator } from "../helpers/OrderValidator.sol";
 import { Order, OrderStatus, ExecutionCall, ExecutionResult, OrderLibrary } from "../types/Order.sol";
 import { IPair } from "../interfaces/IPair.sol";
