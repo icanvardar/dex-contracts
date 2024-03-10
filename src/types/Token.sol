@@ -10,18 +10,38 @@ type Token is address;
 
 using TokenLibrary for Token global;
 
-using Address for address;
-
+/**
+ * @title TokenLibrary
+ * @dev A library for handling token-related operations.
+ */
 library TokenLibrary {
+    /*//////////////////////////////////////////////////////////////////////////
+                             INTERNAL CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Computes the address of a pair contract for two tokens using the given factory address.
+     * @param token0 The address of the first token.
+     * @param token1 The address of the second token.
+     * @param factory The address of the factory contract.
+     * @return The computed address of the pair contract.
+     */
     function computePairAddress(Token token0, Token token1, address factory) internal pure returns (address) {
         return Create2.computeAddress(
             keccak256(abi.encodePacked(Token.unwrap(token0), Token.unwrap(token1))),
-            0xa57bca2368cab6b17271d49f841d97be4c13f1f2b216b066f5b3425e305375dd,
+            0x055070e0e796ae2b6c2f27913d8d6fcaa8bf006a4fcbb73f8b804ed17bd0fb4a,
             factory
         );
     }
 
-    // prototype of swapExactTokensForTokens function in uniswap v2 router
+    /**
+     * @dev Calculates the amount of output token for a given input token amount in a pair.
+     * @param token0 The address of the first token in the pair.
+     * @param pairAddress The address of the pair contract.
+     * @param amountIn The amount of input token.
+     * @param input The address of the input token.
+     * @return The amount of input and output tokens.
+     */
     function calculateAmounts(
         Token token0,
         address pairAddress,
@@ -49,16 +69,19 @@ library TokenLibrary {
         return (amountIn, amountOut);
     }
 
-    function safeTransferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
-        IERC20 tokenToTransfer = IERC20(Token.unwrap(token));
-
-        bytes memory returndata =
-            address(tokenToTransfer).functionCall(abi.encodeCall(tokenToTransfer.transferFrom, (from, to, value)));
-
-        if (returndata.length != 0 && !abi.decode(returndata, (bool))) {
+    /**
+     * @dev Transfers tokens from the sender's account to another account.
+     * @param token The address of the token.
+     * @param from The address from which tokens will be transferred.
+     * @param to The address to which tokens will be transferred.
+     * @param value The amount of tokens to transfer.
+     * @return A boolean indicating whether the transfer was successful.
+     */
+    function transferFrom(Token token, address from, address to, uint256 value) internal returns (bool) {
+        try IERC20(Token.unwrap(token)).transferFrom(from, to, value) {
+            return true;
+        } catch {
             return false;
         }
-
-        return true;
     }
 }

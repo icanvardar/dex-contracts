@@ -1,37 +1,34 @@
-//SPDX-License-Identifier: UNLICENSED
+// // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 import { stdError } from "forge-std/StdError.sol";
 
+import { WETH } from "solady/tokens/WETH.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { UQ112x112 } from "../../src/libraries/UQ112x112.sol";
 
-import { MockERC20 } from "../mocks/MockERC20.sol";
 import { MockFlashSwap } from "../mocks/MockFlashSwap.sol";
 
-contract PairFuzzTest is Test {
-    uint256 public constant TOKEN_A_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
-    uint256 public constant TOKEN_B_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
-
-    uint256 private constant UINT112_TOKEN_A_MAX_TOKENS = 5_192_296_858_534_827e18;
-    uint256 private constant UINT112_TOKEN_B_MAX_TOKENS = 5_192_296_858_534_827e18;
-
-    address public feeToSetter;
+contract Pair_Fork_Test is Test {
     address public feeTo;
+    address public feeToSetter;
+    uint256 public token0Supply;
+    uint256 public token1Supply;
 
     Pair pair;
-    MockERC20 tokenA;
-    MockERC20 tokenB;
+    WETH weth;
+    IERC20 chai;
     PairFactory pairFactory;
 
     //Ordered pair adress
-    MockERC20 public token0;
-    MockERC20 public token1;
+    IERC20 public token0;
+    WETH public token1;
 
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
@@ -48,29 +45,55 @@ contract PairFuzzTest is Test {
     constructor() { }
 
     function setUp() public {
+        vm.createSelectFork({ urlOrAlias: "mainnet" });
+
         feeTo = makeAddr("feeTo");
         feeToSetter = makeAddr("feeToSetter");
 
-        tokenA = new MockERC20("tokenA", "TA");
-        tokenB = new MockERC20("tokenB", "TB");
+        chai = IERC20(0x06AF07097C9Eeb7fD685c692751D5C66dB49c215);
+        weth = WETH(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
 
         pairFactory = new PairFactory(feeToSetter);
 
-        address createdPairAddress = pairFactory.createPair(address(tokenA), address(tokenB));
+        address createdPairAddress = pairFactory.createPair(address(chai), address(weth));
         pair = Pair(createdPairAddress);
 
-        (address _token0, address _token1) = RouterLib.sortTokens(address(tokenA), address(tokenB));
-        token0 = MockERC20(_token0);
-        token1 = MockERC20(_token1);
+        (address _token0, address _token1) = RouterLib.sortTokens(address(chai), address(weth));
+        token0 = IERC20(_token0);
+        token1 = WETH(payable(_token1));
+
+        vm.prank(0x12EDE161c702D1494612d19f05992f43aa6A26FB);
+        token0.transfer(address(this), 10e18);
+
+        token1.deposit{ value: 10e18 }();
+
+        token0Supply = token0.totalSupply();
+        token1Supply = token1.totalSupply();
 
         assertEq(pair.token0(), _token0);
         assertEq(pair.token1(), _token1);
         assertEq(pairFactory.getPair(_token0, _token1), createdPairAddress);
     }
 
-    function testFuzz_ShouldBeSuccess_mint(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0transferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS);
-        uint256 token1transferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS);
+    function test_ShouldBeSuccess_initialize() public {
+        vm.prank(address(pairFactory));
+        pair.initialize(address(token0), address(token1));
+
+        assertEq(pair.token0(), address(token0));
+        assertEq(pair.token1(), address(token1));
+    }
+
+    function test_ShouldBeSuccess_getReserves() public {
+        (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) = pair.getReserves();
+
+        assertEq(_reserve0, 0);
+        assertEq(_reserve1, 0);
+        assertEq(_blockTimestampLast, 0);
+    }
+
+    function test_ShouldBeSuccess_mint() public {
+        uint256 token0transferAmount = 1e18;
+        uint256 token1transferAmount = 1e18;
 
         token0.transfer(address(pair), token0transferAmount);
         token1.transfer(address(pair), token1transferAmount);
@@ -82,7 +105,7 @@ contract PairFuzzTest is Test {
         uint256 poolBalanceToken1 = token1.balanceOf(address(pair));
 
         vm.expectEmit(true, true, true, false);
-        emit Mint(address(this), poolBalanceToken0, poolBalanceToken1);
+        emit Mint(address(this), poolBalanceToken0 - 0, poolBalanceToken1 - 0);
 
         uint256 liquidity = pair.mint(address(this));
 
@@ -100,14 +123,14 @@ contract PairFuzzTest is Test {
         assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
     }
 
-    function testFuzz_ShouldBeSuccess_withLiquidity_mint(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
-
+    function test_ShouldBeSuccess_withLiquidity_mint() public {
         (uint256 firstExpectedLiquidity, uint256 firstActualLiquidity) = _addLiquidity(1e18, 1e18);
 
         vm.warp(block.timestamp + 37);
         pair.sync();
+
+        uint256 token0TransferAmount = 2e18;
+        uint256 token1TransferAmount = 2e18;
 
         token0.transfer(address(pair), token0TransferAmount);
         token1.transfer(address(pair), token1TransferAmount);
@@ -138,11 +161,46 @@ contract PairFuzzTest is Test {
         assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
     }
 
-    function testFuzz_ShouldBeSuccess_burn(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS);
+    function test_ShouldBeSuccess_unbalanced_mint() public {
+        (uint256 firstExpectedLiquidity, uint256 firstActualLiquidity) = _addLiquidity(1e18, 1e18);
 
-        (, uint256 actualLiquidity) = _addLiquidity(token0TransferAmount, token1TransferAmount);
+        vm.warp(block.timestamp + 37);
+        pair.sync();
+
+        uint256 token0TransferAmount = 2e18;
+        uint256 token1TransferAmount = 1e18;
+
+        token0.transfer(address(pair), token0TransferAmount);
+        token1.transfer(address(pair), token1TransferAmount);
+
+        (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
+
+        uint256 balance0 = token0.balanceOf(address(pair));
+        uint256 balance1 = token1.balanceOf(address(pair));
+        uint256 amount0 = balance0 - _reserve0;
+        uint256 amount1 = balance1 - _reserve1;
+
+        uint256 expectedLiquidity =
+            Math.min((amount0 * pair.totalSupply()) / _reserve0, (amount1 * pair.totalSupply()) / _reserve1);
+
+        uint256 liquidity = pair.mint(address(this));
+
+        assertEq(liquidity, expectedLiquidity);
+        assertEq(pair.balanceOf(address(0)), pair.MINIMUM_LIQUIDITY());
+        assertEq(pair.totalSupply(), (firstExpectedLiquidity + expectedLiquidity));
+        assertEq(pair.balanceOf(address(this)), (firstActualLiquidity + expectedLiquidity));
+
+        assertEq(token0.balanceOf(address(pair)), token0TransferAmount + 1e18);
+        assertEq(token1.balanceOf(address(pair)), token1TransferAmount + 1e18);
+
+        (_reserve0, _reserve1,) = pair.getReserves();
+
+        assertEq(uint112(token0.balanceOf(address(pair))), _reserve0);
+        assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
+    }
+
+    function test_ShouldBeSuccess_burn() public {
+        (, uint256 actualLiquidity) = _addLiquidity(1e18, 1e18);
 
         pair.transfer(address(pair), actualLiquidity);
 
@@ -164,18 +222,15 @@ contract PairFuzzTest is Test {
 
         assertEq(pair.balanceOf(address(this)), 0);
         assertEq(pair.totalSupply(), pair.MINIMUM_LIQUIDITY());
-        assertEq(token0.balanceOf(address(this)), TOKEN_A_TOTAL_SUPPLY - token0TransferAmount + token0Amount);
-        assertEq(token1.balanceOf(address(this)), TOKEN_B_TOTAL_SUPPLY - token1TransferAmount + token1Amount);
+        assertEq(token0.balanceOf(address(this)), 10e18 - 1e18 + token0Amount);
+        assertEq(token1.balanceOf(address(this)), 10e18 - 1e18 + token1Amount);
     }
 
-    function testFuzz_ShouldBeSuccess_swap(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS);
-
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+    function test_ShouldBeSuccess_swap() public {
+        _addLiquidity(1e18, 2e18);
 
         uint256 swapAmountIn = 1e17;
-        uint256 amountOut = RouterLib.getAmountOut(swapAmountIn, token0TransferAmount, token1TransferAmount);
+        uint256 amountOut = RouterLib.getAmountOut(swapAmountIn, 1e18, 2e18);
 
         token0.transfer(address(pair), swapAmountIn);
 
@@ -184,19 +239,62 @@ contract PairFuzzTest is Test {
 
         pair.swap(0, amountOut, address(this), "");
 
-        assertEq(token0.balanceOf(address(this)), TOKEN_A_TOTAL_SUPPLY - token0TransferAmount - swapAmountIn);
-        assertEq(token1.balanceOf(address(this)), TOKEN_B_TOTAL_SUPPLY - token1TransferAmount + amountOut);
+        assertEq(token0.balanceOf(address(this)), 10e18 - 1e18 - swapAmountIn);
+        assertEq(token1.balanceOf(address(this)), 10e18 - 2e18 + amountOut);
         (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
 
         assertEq(uint112(token0.balanceOf(address(pair))), _reserve0);
         assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
     }
 
-    function testFuzz_ShouldBeSuccess_flashSwap(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
+    function test_ShouldBeSuccess_reverse_swap() public {
+        _addLiquidity(1e18, 2e18);
 
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+        uint256 swapAmountIn = 1e17;
+        uint256 amountOut = RouterLib.getAmountOut(swapAmountIn, 2e18, 1e18);
+
+        token1.transfer(address(pair), swapAmountIn);
+
+        vm.expectEmit(true, true, true, true);
+        emit Swap(address(this), 0, swapAmountIn, amountOut, 0, address(this));
+
+        pair.swap(amountOut, 0, address(this), "");
+
+        assertEq(token0.balanceOf(address(this)), 10e18 - 1e18 + amountOut);
+        assertEq(token1.balanceOf(address(this)), 10e18 - 2e18 - swapAmountIn);
+        (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
+
+        assertEq(uint112(token0.balanceOf(address(pair))), _reserve0);
+        assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
+    }
+
+    function test_ShouldBeSuccess_double_swap() public {
+        _addLiquidity(1e18, 2e18);
+
+        uint256 swapAmount0In = 1e17;
+        uint256 amount0Out = RouterLib.getAmountOut(swapAmount0In, 1e18, 2e18);
+
+        uint256 swapAmountIn = 1e17;
+        uint256 amountOut = RouterLib.getAmountOut(swapAmountIn, 2e18, 1e18);
+
+        token0.transfer(address(pair), swapAmount0In);
+        token1.transfer(address(pair), swapAmountIn);
+
+        vm.expectEmit(true, true, true, true);
+        emit Swap(address(this), swapAmount0In, swapAmountIn, amountOut, amount0Out, address(this));
+
+        pair.swap(amountOut, amount0Out, address(this), "");
+
+        assertEq(token0.balanceOf(address(this)), 10e18 - 1e18 - swapAmount0In + amountOut);
+        assertEq(token1.balanceOf(address(this)), 10e18 - 2e18 - swapAmountIn + amount0Out);
+        (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
+
+        assertEq(uint112(token0.balanceOf(address(pair))), _reserve0);
+        assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
+    }
+
+    function test_ShouldBeSuccess_flashSwap() public {
+        _addLiquidity(1e18, 2e18);
 
         uint256 flashSwapAmount = 1e17;
         uint256 flashSwapFee = (flashSwapAmount * 3) / 997 + 1;
@@ -208,15 +306,28 @@ contract PairFuzzTest is Test {
         mockFlashSwap.flashSwap(address(pair), 0, flashSwapAmount, address(token1));
 
         assertEq(token1.balanceOf(address(mockFlashSwap)), 0);
-        assertEq(token1.balanceOf(address(pair)), token1TransferAmount + flashSwapFee);
+        assertEq(token1.balanceOf(address(pair)), 2 ether + flashSwapFee);
     }
 
-    function testFuzz_ShouldBeSuccess_twap(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
+    function test_ShouldBeSuccess_reverse_flashSwap() public {
+        _addLiquidity(2e18, 1e18);
 
+        uint256 flashSwapAmount = 1e17;
+        uint256 flashSwapFee = (flashSwapAmount * 3) / 997 + 1;
+
+        MockFlashSwap mockFlashSwap = new MockFlashSwap();
+
+        token0.approve(address(mockFlashSwap), type(uint256).max);
+
+        mockFlashSwap.flashSwap(address(pair), flashSwapAmount, 0, address(token0));
+
+        assertEq(token0.balanceOf(address(mockFlashSwap)), 0);
+        assertEq(token0.balanceOf(address(pair)), 2 ether + flashSwapFee);
+    }
+
+    function test_ShouldBeSuccess_twap() public {
         vm.warp(0);
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+        _addLiquidity(1e18, 2e18);
 
         (uint256 initialPrice0, uint256 initialPrice1, uint32 expected) = _calculateCurrentPriceAndTime();
 
@@ -231,11 +342,8 @@ contract PairFuzzTest is Test {
         assertEq(expected + uint32(2), blockTimestampLast);
     }
 
-    function testFuzz_ShouldBeSuccess_skim(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
-
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+    function test_ShouldBeSuccess_skim() public {
+        _addLiquidity(1e18, 1e18);
 
         token0.transfer(address(pair), 1e18);
         token1.transfer(address(pair), 1e18);
@@ -255,11 +363,8 @@ contract PairFuzzTest is Test {
         assertEq(uint112(token1.balanceOf(address(pair))), _reserve1AfterSync);
     }
 
-    function testFuzz_ShouldBeSuccess_sync(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
-
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+    function test_ShouldBeSuccess_sync() public {
+        _addLiquidity(1e18, 1e18);
 
         token0.transfer(address(pair), 1e18);
         token1.transfer(address(pair), 1e18);
@@ -282,12 +387,9 @@ contract PairFuzzTest is Test {
         assertEq(poolBalanceToken1, _reserve1AfterSync);
     }
 
-    function testFuzz_ShouldBeSuccess_mintFee(address _feeTo) public {
-        vm.assume(_feeTo != address(this));
-        vm.assume(_feeTo != address(0));
-
+    function test_ShouldBeSuccess_mintFee() public {
         vm.prank(feeToSetter);
-        pairFactory.setFeeTo(_feeTo);
+        pairFactory.setFeeTo(feeTo);
 
         (, uint256 actualLiquidity) = _addLiquidity(1e18, 1e18);
 
@@ -306,7 +408,7 @@ contract PairFuzzTest is Test {
         pair.burn(address(this));
 
         assertEq(pair.totalSupply(), pair.MINIMUM_LIQUIDITY() + feeLiquidity);
-        assertEq(pair.balanceOf(_feeTo), feeLiquidity);
+        assertEq(pair.balanceOf(feeTo), feeLiquidity);
 
         (_reserve0, _reserve1,) = pair.getReserves();
 
@@ -314,12 +416,9 @@ contract PairFuzzTest is Test {
         assertEq(uint112(token1.balanceOf(address(pair))), _reserve1);
     }
 
-    function testFuzz_ShouldBeSuccess_off_mintFee(address _feeTo) public {
-        vm.assume(_feeTo != address(this));
-        vm.assume(_feeTo != address(0));
-
+    function test_ShouldBeSuccess_off_mintFee() public {
         vm.prank(feeToSetter);
-        pairFactory.setFeeTo(_feeTo);
+        pairFactory.setFeeTo(feeTo);
 
         (, uint256 actualLiquidity) = _addLiquidity(1e18, 1e18);
 
@@ -337,7 +436,7 @@ contract PairFuzzTest is Test {
         pair.burn(address(this));
 
         assertEq(pair.kLast(), 0);
-        assertEq(pair.balanceOf(_feeTo), 0);
+        assertEq(pair.balanceOf(feeTo), 0);
         assertEq(pair.totalSupply(), pair.MINIMUM_LIQUIDITY());
 
         (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
@@ -348,40 +447,79 @@ contract PairFuzzTest is Test {
 
     /*//////////////////////////////////////////////////////////////////////////
                                       REVERTS
-    ////////////////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////////////////*/
 
-    function testFuzz_Revert_InsufficientLiquidityMinted_mint(uint256 token0Count, uint256 token1Count) public {
-        uint256 token0TransferAmount = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS / 2);
-        uint256 token1TransferAmount = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS / 2);
+    function test_Revert_Forbidden_initialize() public {
+        vm.expectRevert(Pair.Forbidden.selector);
+        pair.initialize(address(token0), address(token1));
+    }
 
-        _addLiquidity(token0TransferAmount, token1TransferAmount);
+    function test_Revert_LiquidityUnderflow_mint() public {
+        vm.expectRevert(stdError.arithmeticError);
+        pair.mint(address(this));
+    }
+
+    function test_Revert_InsufficientLiquidityMinted_mint() public {
+        token0.transfer(address(pair), 1000);
+        token1.transfer(address(pair), 1000);
 
         vm.expectRevert(Pair.InsufficientLiquidityMinted.selector);
         pair.mint(address(this));
     }
 
-    function testFuzz_Revert_InsufficientLiquidityBurned_Burn(uint256 token0Count, uint256 token1Count) public {
-        token0Count = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS);
-        token1Count = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS);
+    function test_Revert_ZeroTotalSupply_burn() public {
+        vm.expectRevert(stdError.divisionError);
+        pair.burn(address(this));
+    }
 
-        _addLiquidity(token0Count, token1Count);
+    function test_Revert_InsufficientLiquidityBurned_burn() public {
+        _addLiquidity(1e18, 1e18);
 
+        vm.prank(address(0x1));
         vm.expectRevert(Pair.InsufficientLiquidityBurned.selector);
         pair.burn(address(this));
     }
 
-    function testFuzz_Revert_InsufficientLiquidity_swap(uint256 token0Count, uint256 token1Count) public {
-        token0Count = bound(token0Count, 1e18, UINT112_TOKEN_A_MAX_TOKENS);
-        token1Count = bound(token1Count, 1e18, UINT112_TOKEN_B_MAX_TOKENS);
-        _addLiquidity(token0Count, token1Count);
+    function test_Revert_InsufficientOutputAmount_swap() public {
+        _addLiquidity(1e18, 1e18);
+
+        vm.expectRevert(Pair.InsufficientOutputAmount.selector);
+        pair.swap(0, 0, address(this), "");
+    }
+
+    function test_Revert_InsufficientLiquidity_swap() public {
+        _addLiquidity(1e18, 1e18);
 
         vm.expectRevert(Pair.InsufficientLiquidity.selector);
-        pair.swap(0, token1Count + 1e18, address(this), "");
+        pair.swap(0, 5e18, address(this), "");
+    }
+
+    function test_Revert_InvalidTo_swap() public {
+        _addLiquidity(1e18, 1e18);
+
+        vm.expectRevert(Pair.InvalidTo.selector);
+        pair.swap(0, 1e17, address(token0), "");
+    }
+
+    function test_Revert_InsufficientInputAmount_swap() public {
+        _addLiquidity(1e18, 1e18);
+
+        vm.expectRevert(Pair.InsufficientInputAmount.selector);
+        pair.swap(0, 1e18, address(this), "");
+    }
+
+    function test_Revert_K_swap() public {
+        _addLiquidity(1e18, 1e18);
+
+        token0.transfer(address(pair), 1e17);
+
+        vm.expectRevert(Pair.K.selector);
+        pair.swap(0, 2e17, address(this), "");
     }
 
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
-    ////////////////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////////////////*/
 
     function _addLiquidity(uint256 token0Amount, uint256 token1Amount) private returns (uint256, uint256) {
         uint256 expectedLiquidity = Math.sqrt(token0Amount * token1Amount);

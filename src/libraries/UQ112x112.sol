@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 
 /**
  * @title UQ112x112
@@ -11,7 +11,15 @@ import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
 library UQ112x112 {
     using SafeCastLib for uint112;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                  PUBLIC CONSTANT
+    //////////////////////////////////////////////////////////////////////////*/
+
     uint224 constant Q112 = 2 ** 112;
+
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Encodes a uint112 as a UQ112x112.

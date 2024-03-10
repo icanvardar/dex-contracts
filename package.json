@@ -1,13 +1,20 @@
 {
-  "name": "@tokenize-technology/dex-contracts",
-  "description": "",
+  "name": "dex-contracts",
+  "description": "Decentralized exchange with liquity pools and limit order capability for each pair.",
   "version": "1.0.0",
   "author": {
-    "name": "tokenize-technology",
-    "url": "https://github.com/tokenize-technology"
+    "name": "Can Vardar",
+    "url": "https://github.com/icanvardar"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.1",
+    "solady": "github:Vectorized/solady"
   },
   "devDependencies": {
-    "prettier": "^3.0.0"
+    "ds-test": "github:dapphub/ds-test",
+    "forge-std": "github:foundry-rs/forge-std#v1.7.5",
+    "prettier": "^3.0.0",
+    "solhint": "^3.6.2"
   },
   "keywords": [
     "blockchain",
@@ -22,15 +29,12 @@
   "scripts": {
     "clean": "rm -rf cache out",
     "build": "forge build",
-    "lint": "pnpm lint:sol && pnpm prettier:check",
-    "lint:sol": "forge fmt --check && pnpm solhint {script,src,test}/**/*.sol",
+    "lint": "bun run lint:sol && bun run prettier:check",
+    "lint:sol": "forge fmt --check && bun solhint {script,src,test}/**/*.sol",
     "prettier:check": "prettier --check **/*.{json,md,yml} --ignore-path=.prettierignore",
     "prettier:write": "prettier --write **/*.{json,md,yml} --ignore-path=.prettierignore",
     "test": "forge test",
     "test:coverage": "forge coverage",
     "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
-  },
-  "dependencies": {
-    "solhint": "^3.6.2"
   }
 }

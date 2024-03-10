@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import { Ownable } from "vectorized/solady/auth/Ownable.sol";
+import { Ownable } from "solady/auth/Ownable.sol";
 import { OrderValidator } from "../helpers/OrderValidator.sol";
-import { Order, OrderStatus, OrderCall, OrderResult, OrderLibrary } from "../types/Order.sol";
+import { Order, OrderStatus, ExecutionCall, ExecutionResult, OrderLibrary } from "../types/Order.sol";
 import { IPair } from "../interfaces/IPair.sol";
 import { Token } from "../types/Token.sol";
 
@@ -96,25 +96,25 @@ contract OrderManager is OrderValidator, Ownable {
 
     /**
      * @dev Execute provided orders
-     * @param orderCalls array of orders
+     * @param calls array of orders
      * @return results boolean array of order results
      */
-    function batchExecuteOrder(OrderCall[] memory orderCalls) external isExecutor returns (OrderResult[] memory) {
-        uint256 orderCallsLength = orderCalls.length;
+    function batchExecuteOrder(ExecutionCall[] calldata calls) external isExecutor returns (ExecutionResult[] memory) {
+        uint256 callsLength = calls.length;
 
-        if (orderCallsLength == 0) {
+        if (callsLength == 0) {
             revert EmptyOrdersNotSupported();
         }
 
-        if (orderCallsLength > CHUNK_SIZE_LIMIT) {
+        if (callsLength > CHUNK_SIZE_LIMIT) {
             revert ChunkSizeExceeded();
         }
 
-        OrderResult[] memory results = new OrderResult[](orderCallsLength);
+        ExecutionResult[] memory results = new ExecutionResult[](callsLength);
 
         uint256 i;
-        for (i; i < orderCallsLength; i++) {
-            results[i] = _executeOrder66(orderCalls[i]);
+        for (i; i < callsLength; i++) {
+            results[i] = _executeOrder66(calls[i]);
         }
 
         return results;
@@ -162,23 +162,23 @@ contract OrderManager is OrderValidator, Ownable {
 
     /**
      * @dev Internal function which is execute order
-     * @param orderCall swap limit order
+     * @param call swap limit order
      * @return executed result of is order executed
      */
-    function _executeOrder66(OrderCall memory orderCall) internal returns (OrderResult memory) {
-        Order memory order = orderCall.order;
-        bytes memory signature = orderCall.signature;
+    function _executeOrder66(ExecutionCall memory call) internal returns (ExecutionResult memory) {
+        Order memory order = call.order;
+        bytes memory signature = call.signature;
 
         if (signatures[signature]) {
-            return OrderResult(false, OrderStatus.ALREADY_ISSUED);
+            return ExecutionResult(false, OrderStatus.ALREADY_ISSUED);
         }
 
         if (!order.validateStructure()) {
-            return OrderResult(false, OrderStatus.INVALID_STRUCTURE);
+            return ExecutionResult(false, OrderStatus.INVALID_STRUCTURE);
         }
 
         if (!validateSigner(order, signature)) {
-            return OrderResult(false, OrderStatus.INVALID_SIGNATURE);
+            return ExecutionResult(false, OrderStatus.INVALID_SIGNATURE);
         }
 
         signatures[signature] = true;
@@ -186,11 +186,11 @@ contract OrderManager is OrderValidator, Ownable {
         (Token token0, Token token1) = order.sortTokens();
 
         if (Token.unwrap(token0) == address(0)) {
-            return OrderResult(false, OrderStatus.WRONG_TOKEN_ADDRESS);
+            return ExecutionResult(false, OrderStatus.WRONG_TOKEN_ADDRESS);
         }
 
         if (!order.validateExpiration()) {
-            return OrderResult(false, OrderStatus.EXPIRED);
+            return ExecutionResult(false, OrderStatus.EXPIRED);
         }
 
         address pairAddress = token0.computePairAddress(token1, FACTORY);
@@ -198,15 +198,15 @@ contract OrderManager is OrderValidator, Ownable {
         (uint256 amountIn, uint256 amountOut) = token0.calculateAmounts(pairAddress, order.amountIn, order.path[0]);
 
         if (amountOut == 0) {
-            return OrderResult(false, OrderStatus.INSUFFICIENT_LIQUIDITY);
+            return ExecutionResult(false, OrderStatus.INSUFFICIENT_LIQUIDITY);
         }
 
         if (amountOut < order.amountOutMin) {
-            return OrderResult(false, OrderStatus.SLIPPAGE_TOO_HIGH);
+            return ExecutionResult(false, OrderStatus.SLIPPAGE_TOO_HIGH);
         }
 
-        if (!Token.wrap(order.path[0]).safeTransferFrom(order.from, pairAddress, amountIn)) {
-            return OrderResult(false, OrderStatus.TRANSFER_FAILED);
+        if (!Token.wrap(order.path[0]).transferFrom(order.from, pairAddress, amountIn)) {
+            return ExecutionResult(false, OrderStatus.TRANSFER_FAILED);
         }
 
         (uint256 amount0Out, uint256 amount1Out) =
@@ -215,9 +215,9 @@ contract OrderManager is OrderValidator, Ownable {
         try IPair(pairAddress).swap(amount0Out, amount1Out, order.to, new bytes(0)) {
             emit OrderExecuted(order.amountIn, order.amountOutMin, order.path, order.from, order.to);
 
-            return OrderResult(true, OrderStatus.FILLED);
+            return ExecutionResult(true, OrderStatus.FILLED);
         } catch {
-            return OrderResult(false, OrderStatus.EXECUTION_FAILED);
+            return ExecutionResult(false, OrderStatus.EXECUTION_FAILED);
         }
     }
 }

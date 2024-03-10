@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
-import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 
 import { IPair } from "../interfaces/IPair.sol";
 
@@ -13,13 +13,28 @@ import { IPair } from "../interfaces/IPair.sol";
 library RouterLib {
     using SafeCastLib for uint256;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                  ERRORS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Error indicating that two addresses provided are identical
     error IdenticalAddresses();
+    /// @notice Error indicating that an address provided is zero
     error ZeroAddress();
+    /// @notice Error indicating that there is insufficient liquidity for a transaction
     error InsufficientLiquidity();
+    /// @notice Error indicating that the output amount in a transaction is insufficient
     error InsufficientOutputAmount();
+    /// @notice Error indicating that the input amount in a transaction is insufficient
     error InsufficientInputAmount();
+    /// @notice Error indicating that the amount provided is insufficient for the operation
     error InsufficientAmount();
+    /// @notice Error indicating that the path provided for a transaction is invalid
     error InvalidPath();
+
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Returns the sorted order of two token addresses.
@@ -49,7 +64,7 @@ library RouterLib {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = Create2.computeAddress(
             keccak256(abi.encodePacked(token0, token1)),
-            0xa57bca2368cab6b17271d49f841d97be4c13f1f2b216b066f5b3425e305375dd,
+            0x055070e0e796ae2b6c2f27913d8d6fcaa8bf006a4fcbb73f8b804ed17bd0fb4a,
             factory
         );
     }

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 import { stdError } from "forge-std/StdError.sol";
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "forge-std/console.sol";
+
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import { EIP712 } from "vectorized/solady/utils/EIP712.sol";
+import { EIP712 } from "solady/utils/EIP712.sol";
 import { Order, OrderLibrary } from "../types/Order.sol";
 import { OrderTypedHash } from "../types/OrderTypedHash.sol";
 

@@ -5,7 +5,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 
 import { UQ112x112 } from "../libraries/UQ112x112.sol";
 import { LPToken } from "./LPToken.sol";
@@ -20,22 +20,55 @@ contract Pair is LPToken, ReentrancyGuard {
     using UQ112x112 for uint224;
     using SafeCastLib for uint256;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                  PUBLIC CONSTANT
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Minimum liquidity required for creating a pair
     uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                   PUBLIC STORAGE
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Address of the factory contract
     address public factory;
+    /// @notice Addresses of the token0 in the pair
     address public token0;
+    /// @notice Addresses of the token1 in the pair
     address public token1;
 
-    uint112 private reserve0; // uses single storage slot, accessible via getReserves
-    uint112 private reserve1; // uses single storage slot, accessible via getReserves
-    uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
+    /*//////////////////////////////////////////////////////////////////////////
+                                   PRIVATE STORAGE
+    //////////////////////////////////////////////////////////////////////////*/
 
+    /// @notice Reserves of token0
+    uint112 private reserve0;
+    /// @notice Reserves of token1
+    uint112 private reserve1;
+    /// @notice Timestamp of the last block
+    uint32 private blockTimestampLast;
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                   PUBLIC STORAGE
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Price0 cumulative variable
     uint256 public price0CumulativeLast;
+    /// @notice Price1 cumulative variable
     uint256 public price1CumulativeLast;
-    uint256 public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
+    /// @notice Product of reserves, as of immediately after the most recent liquidity event
+    uint256 public kLast;
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                   EVENTS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Emitted when liquidity is added to the pair by a user.
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    /// @notice Emitted when liquidity is removed from the pair by a user.
     event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
+    /// @notice Emitted when a swap occurs between token0 and token1.
     event Swap(
         address indexed sender,
         uint256 amount0In,
@@ -44,18 +77,37 @@ contract Pair is LPToken, ReentrancyGuard {
         uint256 amount1Out,
         address indexed to
     );
+    /// @notice Emitted when the reserves of the pair are updated.
     event Sync(uint112 reserve0, uint112 reserve1);
 
+    /*//////////////////////////////////////////////////////////////////////////
+                                   ERRORS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    /// @notice Throws an error indicating that the pair is locked.
     error Locked();
+    /// @notice Throws an error indicating that an action is forbidden.
     error Forbidden();
+    /// @notice Throws an error indicating an arithmetic overflow occurred.
     error Overflow();
+    /// @notice Throws an error indicating that the amount of liquidity minted is insufficient.
     error InsufficientLiquidityMinted();
+    /// @notice Throws an error indicating that the amount of liquidity burned is insufficient.
     error InsufficientLiquidityBurned();
+    /// @notice Throws an error indicating that there is insufficient liquidity in the pair.
     error InsufficientLiquidity();
+    /// @notice Throws an error indicating that the output amount is insufficient.
     error InsufficientOutputAmount();
+    /// @notice Throws an error indicating that the input amount is insufficient.
     error InsufficientInputAmount();
+    /// @notice Throws an error indicating that the recipient address is invalid.
     error InvalidTo();
+    /// @notice Throws an error indicating that there is an issue with the product of reserves.
     error K();
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                     CONSTRUCTOR
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Contract constructor, sets the factory address.
@@ -63,6 +115,10 @@ contract Pair is LPToken, ReentrancyGuard {
     constructor() {
         factory = msg.sender;
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                         USER-FACING NON-CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Initializes the Pair contract with token0 and token1 addresses.
@@ -77,6 +133,10 @@ contract Pair is LPToken, ReentrancyGuard {
         token1 = _token1;
     }
 
+    /*//////////////////////////////////////////////////////////////////////////
+                           USER-FACING CONSTANT FUNCTION
+    //////////////////////////////////////////////////////////////////////////*/
+
     /**
      * @dev Returns the current reserves and the last block timestamp.
      * @return _reserve0 The reserve of token0.
@@ -88,6 +148,10 @@ contract Pair is LPToken, ReentrancyGuard {
         _reserve1 = reserve1;
         _blockTimestampLast = blockTimestampLast;
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                         USER-FACING NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Mint function. Mints liquidity tokens and handles initial conditions.
@@ -221,6 +285,10 @@ contract Pair is LPToken, ReentrancyGuard {
     function sync() external nonReentrant {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
+
+    /*//////////////////////////////////////////////////////////////////////////
+                         PRIVATE NON-CONSTANT FUNCTIONS
+    //////////////////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Updates reserves and, on the first call per block, price accumulators.
