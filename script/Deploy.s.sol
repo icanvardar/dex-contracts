@@ -5,7 +5,7 @@ import { PairFactory } from "../src/core/PairFactory.sol";
 import { Router } from "../src/helpers/Router.sol";
 import { OrderManager } from "../src/utils/OrderManager.sol";
 import { MockERC20 } from "../test/mocks/MockERC20.sol";
-import { WETH } from "vectorized/solady/tokens/WETH.sol";
+import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "./../src/libraries/RouterLib.sol";
 import "forge-std/StdJson.sol";
 import "forge-std/console.sol";
@@ -59,10 +59,11 @@ contract Deploy is BaseScript {
         uint256 token0TransferAmount = 1_000_000e18;
         uint256 token1TransferAmount = 1_000_000e18;
 
-        //address wethAddress = addressPayload.weth;
-        // if (wethAddress == address(0) || feeToSetter == address(0)) {
-        //     revert UndefinedArgs();
-        // }
+        // TODO: Refactor this condition due to the fact that unordered json reading
+        address wethAddress = addressPayload.weth;
+        if (wethAddress == address(0) || feeToSetter == address(0)) {
+            revert UndefinedArgs();
+        }
 
         weth = new WETH();
 

@@ -3,9 +3,9 @@ pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 
-import { WETH } from "vectorized/solady/tokens/WETH.sol";
-import { Ownable } from "vectorized/solady/auth/Ownable.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import { WETH } from "solady/tokens/WETH.sol";
+import { Ownable } from "solady/auth/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { Router } from "../../src/helpers/Router.sol";

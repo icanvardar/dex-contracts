@@ -1,5 +1,4 @@
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-ds-test/=lib/forge-std/lib/ds-test/src/
-forge-std/=lib/forge-std/src/
-openzeppelin-contracts/=lib/openzeppelin-contracts/
-vectorized/solady/=lib/solady/src
+@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+forge-std/=node_modules/forge-std/src/
+solady/=node_modules/solady/src/
+ds-test/=node_modules/ds-test/src/

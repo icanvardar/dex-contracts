@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 
 import { UQ112x112 } from "../../src/libraries/UQ112x112.sol";
 
-import { SafeCastLib } from "vectorized/solady/utils/SafeCastLib.sol";
+import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 
 contract UQ112x112FuzzTest is Test {
     using SafeCastLib for uint112;
