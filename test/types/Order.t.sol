@@ -20,8 +20,6 @@ contract OrderTest is Test {
     MockERC20 public token0;
     MockERC20 public token1;
 
-    constructor() { }
-
     function setUp() public {
         senderAddress = makeAddr("sender");
         deadline = block.timestamp + 1;

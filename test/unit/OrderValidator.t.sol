@@ -3,12 +3,8 @@ pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-
-import { Pair } from "../../src/core/Pair.sol";
 import { Order, OrderLibrary } from "../../src/types/Order.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
-import { OrderManager } from "./../../src/utils/OrderManager.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { OrderValidatorHarness } from "../harness/OrderValidatorHarness.sol";
@@ -23,8 +19,6 @@ contract OrderValidatorTest is Test {
     //Ordered pair adress
     MockERC20 public token0;
     MockERC20 public token1;
-
-    constructor() { }
 
     function setUp() public {
         deadline = block.timestamp + 1;

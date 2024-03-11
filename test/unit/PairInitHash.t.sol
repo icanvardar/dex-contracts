@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "forge-std/console.sol";
+import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 
 import { PairInitHash } from "../utils/PairInitHash.sol";

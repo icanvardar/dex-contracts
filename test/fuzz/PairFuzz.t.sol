@@ -2,9 +2,8 @@
 pragma solidity 0.8.21;
 
 import { Test } from "forge-std/Test.sol";
-import { stdError } from "forge-std/StdError.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
@@ -24,10 +23,10 @@ contract PairFuzzTest is Test {
     address public feeToSetter;
     address public feeTo;
 
-    Pair pair;
-    MockERC20 tokenA;
-    MockERC20 tokenB;
-    PairFactory pairFactory;
+    Pair internal pair;
+    MockERC20 internal tokenA;
+    MockERC20 internal tokenB;
+    PairFactory internal pairFactory;
 
     //Ordered pair adress
     MockERC20 public token0;
@@ -44,8 +43,6 @@ contract PairFuzzTest is Test {
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
-
-    constructor() { }
 
     function setUp() public {
         feeTo = makeAddr("feeTo");

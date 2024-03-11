@@ -22,7 +22,7 @@ contract PairFactory {
     /// @notice Array containing addresses of all pairs created by the factory
     address[] public allPairs;
     /// @notice Mapping to get the pair contract address for a given pair of tokens
-    mapping(address => mapping(address => address)) public getPair;
+    mapping(address pair => mapping(address token0 => address token1)) public getPair;
 
     /*//////////////////////////////////////////////////////////////////////////
                                    EVENTS

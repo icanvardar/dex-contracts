@@ -5,7 +5,6 @@ import { Test } from "forge-std/Test.sol";
 
 import { WETH } from "solady/tokens/WETH.sol";
 import { Ownable } from "solady/auth/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { Router } from "../../src/helpers/Router.sol";
@@ -46,8 +45,6 @@ contract OrderManagerTest is Test {
 
     event ExecutorAdded(address serviceAddress);
     event ExecutorRemoved(address serviceAddress);
-
-    constructor() { }
 
     function setUp() public {
         deadline = block.timestamp + 1;
@@ -96,7 +93,7 @@ contract OrderManagerTest is Test {
     }
 
     function test_ShouldBeSuccess_BatchExecuteOrder() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
         uint256 senderAddressZero = 5e18;
@@ -143,7 +140,7 @@ contract OrderManagerTest is Test {
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -866,11 +863,11 @@ contract OrderManagerTest is Test {
     //     ////////////////////////////////////////////////////////////////////////*/
 
     function test_Revert_emptyOrdersNotSupported_BatchExecuteOrder() public {
-        ExecutionCall[] memory ExecutionCalls = new ExecutionCall[](0);
+        ExecutionCall[] memory executionCalls = new ExecutionCall[](0);
 
         vm.prank(web2Service);
         vm.expectRevert(OrderManager.EmptyOrdersNotSupported.selector);
-        orderManager.batchExecuteOrder(ExecutionCalls);
+        orderManager.batchExecuteOrder(executionCalls);
     }
 
     function test_Revert_chunkSizeExceeded_BatchExecuteOrder() public {

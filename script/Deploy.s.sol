@@ -7,8 +7,8 @@ import { OrderManager } from "../src/utils/OrderManager.sol";
 import { MockERC20 } from "../test/mocks/MockERC20.sol";
 import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "./../src/libraries/RouterLib.sol";
-import "forge-std/StdJson.sol";
-import "forge-std/console.sol";
+import { stdJson } from "forge-std/StdJson.sol";
+import { console } from "forge-std/console.sol";
 
 import { BaseScript } from "./Base.s.sol";
 
@@ -29,8 +29,6 @@ contract Deploy is BaseScript {
     error UndefinedArgs();
 
     receive() external payable { }
-
-    constructor() { }
 
     function concatenateStringAndUint256(string memory str, uint256 num) public pure returns (string memory) {
         // Concatenate the two strings
