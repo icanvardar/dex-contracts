@@ -16,77 +16,76 @@ contract Deploy is BaseScript {
 
     uint256 public deadline;
 
-    WETH public weth;
-    MockERC20 public tokenA;
-    MockERC20 public tokenB;
-
-    error UndefinedArgs();
-
     receive() external payable { }
 
     function run()
         public
         broadcast
-        returns (PairFactory factory, Router router, OrderManager orderManager, address createdPairAddress)
+        returns (PairFactory factory, Router router, OrderManager orderManager, address mockPairAddress)
     {
-        deadline = block.timestamp + 1000;
-        uint256 token0TransferAmount = 1_000_000e18;
-        uint256 token1TransferAmount = 1_000_000e18;
+        WETH weth;
+        mockPairAddress = address(0);
+        bool mocksEnabled =
+            keccak256(abi.encodePacked(vm.envString("DEPLOY_MODE"))) == keccak256(abi.encodePacked(("test")));
 
-        address wethAddress = vm.envAddress("WETH_ADDRESS");
-        address feeToSetter = vm.envAddress("FEE_TO_SETTER");
-
-        if (wethAddress == address(0) || feeToSetter == address(0)) {
-            revert UndefinedArgs();
+        if (mocksEnabled) {
+            weth = new WETH();
+            weth.deposit{ value: 32e18 }();
+        } else {
+            weth = WETH(payable(vm.envAddress("WETH_ADDRESS")));
         }
 
-        weth = new WETH();
-
-        weth.deposit{ value: 5e18 }();
-
-        factory = new PairFactory(feeToSetter);
+        factory = new PairFactory(vm.envAddress("FEE_TO_SETTER"));
         router = new Router(address(factory), address(weth));
         orderManager = new OrderManager(address(factory), CHUNK_SIZE_LIMIT);
 
-        orderManager.addExecutor(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+        orderManager.addExecutor(vm.envAddress("EXECUTOR"));
 
-        string memory deployMode = vm.envString("DEPLOY_MODE");
+        if (mocksEnabled) {
+            MockERC20 tokenA = new MockERC20("tokenA", "TA");
+            MockERC20 tokenB = new MockERC20("tokenB", "TB");
 
-        if (keccak256(abi.encodePacked(deployMode)) == keccak256(abi.encodePacked(("test")))) {
-            console.log(
-                "/* ////////////////////////////////////////////////////////// */\n",
-                "/*                  Running Test Deploy Mode                  */\n",
-                "/* ////////////////////////////////////////////////////////// */\n"
+            uint256 token0LiquidityAmt = 1_000_000e18;
+            uint256 token1LiquidityAmt = 1_000_000e18;
+
+            tokenA.approve(address(router), token0LiquidityAmt);
+            tokenB.approve(address(router), token1LiquidityAmt);
+
+            _addMockLiquidity(
+                router,
+                tokenA,
+                tokenB,
+                token0LiquidityAmt,
+                token1LiquidityAmt,
+                vm.envAddress("LIQUIDITY_TO"),
+                block.timestamp + 1000
             );
 
-            tokenA = new MockERC20("tokenA", "TA");
-            tokenB = new MockERC20("tokenB", "TB");
-
-            _addLiquidity(router, token0TransferAmount, token1TransferAmount);
-
-            createdPairAddress = RouterLib.pairFor(address(factory), address(tokenA), address(tokenB));
+            mockPairAddress = RouterLib.pairFor(address(factory), address(tokenA), address(tokenB));
         }
     }
 
-    function _addLiquidity(
+    function _addMockLiquidity(
         Router _router,
-        uint256 _tokenAAmount,
-        uint256 _tokenBAmount
+        MockERC20 _tokenA,
+        MockERC20 _tokenB,
+        uint256 _tokenALiquidityAmount,
+        uint256 _tokenBLiquidityAmount,
+        address _liquidityTo,
+        uint256 _deadline
     )
         private
         returns (uint256 amountA, uint256 amountB, uint256 liquidity)
     {
-        tokenA.approve(address(_router), _tokenAAmount);
-        tokenB.approve(address(_router), _tokenBAmount);
         (amountA, amountB, liquidity) = _router.addLiquidity(
-            address(tokenA),
-            address(tokenB),
-            _tokenAAmount,
-            _tokenBAmount,
-            _tokenAAmount,
-            _tokenBAmount,
-            0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
-            deadline
+            address(_tokenA),
+            address(_tokenB),
+            _tokenALiquidityAmount,
+            _tokenBLiquidityAmount,
+            _tokenALiquidityAmount,
+            _tokenBLiquidityAmount,
+            _liquidityTo,
+            _deadline
         );
     }
 }
