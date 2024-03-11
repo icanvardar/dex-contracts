@@ -39,9 +39,8 @@ contract Deploy is BaseScript {
 
     function readAddressesFromFile() public view returns (AddressPayload memory addressPayload) {
         string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/script/data/addresses.json");
+        string memory path = string.concat(root, "/tmp/addresses.json");
         string memory json = vm.readFile(path);
-        // bytes memory addresses = stdJson.parseRaw(json, ".421614");
         bytes memory addresses = stdJson.parseRaw(json, concatenateStringAndUint256(".", block.chainid));
         addressPayload = abi.decode(addresses, (AddressPayload));
     }
