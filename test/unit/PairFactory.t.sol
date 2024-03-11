@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 
 import { IPair } from "../../src/interfaces/IPair.sol";
@@ -15,13 +14,11 @@ contract PairFactoryTest is Test {
     address public owner;
     address public feeTo;
 
-    MockERC20 tokenA;
-    MockERC20 tokenB;
-    PairFactory pairFactory;
+    MockERC20 internal tokenA;
+    MockERC20 internal tokenB;
+    PairFactory internal pairFactory;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
-
-    constructor() { }
 
     function setUp() public {
         owner = makeAddr("owner");
