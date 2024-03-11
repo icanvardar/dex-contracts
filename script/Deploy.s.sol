@@ -7,17 +7,11 @@ import { OrderManager } from "../src/utils/OrderManager.sol";
 import { MockERC20 } from "../test/mocks/MockERC20.sol";
 import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "./../src/libraries/RouterLib.sol";
-import { stdJson } from "forge-std/StdJson.sol";
 import { console } from "forge-std/console.sol";
 
 import { BaseScript } from "./Base.s.sol";
 
 contract Deploy is BaseScript {
-    struct AddressPayload {
-        address feeToSetter;
-        address weth;
-    }
-
     uint8 public constant CHUNK_SIZE_LIMIT = 10;
 
     uint256 public deadline;
@@ -30,34 +24,18 @@ contract Deploy is BaseScript {
 
     receive() external payable { }
 
-    function concatenateStringAndUint256(string memory str, uint256 num) public pure returns (string memory) {
-        // Concatenate the two strings
-        string memory result = string(abi.encodePacked(str, vm.toString(num)));
-
-        return result;
-    }
-
-    function readAddressesFromFile() public view returns (AddressPayload memory addressPayload) {
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/tmp/addresses.json");
-        string memory json = vm.readFile(path);
-        bytes memory addresses = stdJson.parseRaw(json, concatenateStringAndUint256(".", block.chainid));
-        addressPayload = abi.decode(addresses, (AddressPayload));
-    }
-
     function run()
         public
         broadcast
         returns (PairFactory factory, Router router, OrderManager orderManager, address createdPairAddress)
     {
-        AddressPayload memory addressPayload = readAddressesFromFile();
-        address feeToSetter = addressPayload.feeToSetter;
         deadline = block.timestamp + 1000;
         uint256 token0TransferAmount = 1_000_000e18;
         uint256 token1TransferAmount = 1_000_000e18;
 
-        // TODO: Refactor this condition due to the fact that unordered json reading
-        address wethAddress = addressPayload.weth;
+        address wethAddress = vm.envAddress("WETH_ADDRESS");
+        address feeToSetter = vm.envAddress("FEE_TO_SETTER");
+
         if (wethAddress == address(0) || feeToSetter == address(0)) {
             revert UndefinedArgs();
         }
