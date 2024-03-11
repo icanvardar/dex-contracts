@@ -16,18 +16,16 @@ contract RouterLibTest is Test {
     address public feeToSetter;
     address public createdPairAddress;
 
-    Pair pair;
+    Pair internal pair;
     WETH public weth;
-    MockERC20 tokenA;
-    MockERC20 tokenB;
+    MockERC20 internal tokenA;
+    MockERC20 internal tokenB;
     Router public router;
     PairFactory public pairFactory;
 
     //Ordered pair adress
     MockERC20 public token0;
     MockERC20 public token1;
-
-    constructor() { }
 
     function setUp() public {
         deadline = block.timestamp + 1;
