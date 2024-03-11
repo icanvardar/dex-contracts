@@ -15,9 +15,6 @@ import { MockERC20 } from "../mocks/MockERC20.sol";
 
 contract TokenTest is Test {
     bytes32 public constant _DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-    bytes32 public constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amountIn,uint256 amountOutMin,address[] path,address from,address to,uint256 deadline,uint256 timestamp)"
-    );
 
     Router public router;
     PairFactory public pairFactory;

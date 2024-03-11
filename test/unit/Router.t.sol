@@ -78,18 +78,18 @@ contract RouterTest is Test {
         MockERC20 tokenC = new MockERC20("tokenC", "TC");
         MockERC20 tokenD = new MockERC20("tokenD", "TD");
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 token1approveAmount = 1e18;
 
-        tokenC.approve(address(router), token0approveAmount);
+        tokenC.approve(address(router), token0ApprovedAmt);
         tokenD.approve(address(router), token1approveAmount);
 
         (uint256 amountA, uint256 amountB, uint256 liquidity) = router.addLiquidity(
             address(tokenC),
             address(tokenD),
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
             address(this),
             deadline
@@ -111,16 +111,16 @@ contract RouterTest is Test {
         uint256 token1transferAmount = 1e18;
         (,, uint256 firstLiquidity) = _addLiquidity(token0transferAmount, token1transferAmount);
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 token1approveAmount = 2e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         token1.approve(address(router), token1approveAmount);
 
         (uint256 amountA, uint256 amountB, uint256 secondLiquidity) = router.addLiquidity(
             address(token0),
             address(token1),
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
             1e18,
             1e17,
@@ -129,9 +129,9 @@ contract RouterTest is Test {
         );
 
         (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
-        uint256 amountBOptimal = RouterLib.quote(token0approveAmount, _reserve0, _reserve1);
+        uint256 amountBOptimal = RouterLib.quote(token0ApprovedAmt, _reserve0, _reserve1);
 
-        assertEq(amountA, token0approveAmount);
+        assertEq(amountA, token0ApprovedAmt);
         assertEq(amountB, amountBOptimal);
         assertEq(pair.balanceOf(address(this)), firstLiquidity + secondLiquidity);
     }
@@ -141,14 +141,14 @@ contract RouterTest is Test {
         uint256 token1transferAmount = 5e18;
         (,, uint256 firstLiquidity) = _addLiquidity(token0transferAmount, token1transferAmount);
 
-        uint256 token0approveAmount = 2e18;
+        uint256 token0ApprovedAmt = 2e18;
         uint256 token1approveAmount = 1e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         token1.approve(address(router), token1approveAmount);
 
         (uint112 _reserve0, uint112 _reserve1,) = pair.getReserves();
-        uint256 amountBOptimal = RouterLib.quote(token0approveAmount, _reserve0, _reserve1);
+        uint256 amountBOptimal = RouterLib.quote(token0ApprovedAmt, _reserve0, _reserve1);
 
         uint256 nonOptimal = amountBOptimal - 1e17;
 
@@ -157,7 +157,7 @@ contract RouterTest is Test {
         (uint256 amountA, uint256 amountB, uint256 secondLiquidity) = router.addLiquidity(
             address(token0),
             address(token1),
-            token0approveAmount,
+            token0ApprovedAmt,
             nonOptimal,
             amountAOptimal,
             token1approveAmount,
@@ -171,22 +171,22 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_noPair_addLiquidityETH() public {
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 WETHapproveAmount = 2e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         weth.approve(address(router), WETHapproveAmount);
 
         (uint256 amountA, uint256 amountB, uint256 secondLiquidity) = router.addLiquidityETH{ value: 2e18 }(
-            address(token0), token0approveAmount, 1e18, 1e17, address(this), deadline
+            address(token0), token0ApprovedAmt, 1e18, 1e17, address(this), deadline
         );
 
         address pairAddress = pairFactory.getPair(address(token0), address(weth));
 
         (uint112 _reserve0, uint112 _reserve1,) = Pair(pairAddress).getReserves();
-        uint256 amountBOptimal = RouterLib.quote(token0approveAmount, _reserve0, _reserve1);
+        uint256 amountBOptimal = RouterLib.quote(token0ApprovedAmt, _reserve0, _reserve1);
 
-        assertEq(amountA, token0approveAmount);
+        assertEq(amountA, token0ApprovedAmt);
         assertEq(amountB, amountBOptimal);
         assertEq(Pair(pairAddress).balanceOf(address(this)), secondLiquidity);
     }
@@ -221,14 +221,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_removeLiquidityETH() public {
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 WETHapproveAmount = 1e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         weth.approve(address(router), WETHapproveAmount);
 
         (uint256 amountA,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
-            address(token0), token0approveAmount, 1e18, 1e18, address(this), deadline
+            address(token0), token0ApprovedAmt, 1e18, 1e18, address(this), deadline
         );
 
         address pairAddress = pairFactory.getPair(address(token0), address(weth));
@@ -239,7 +239,7 @@ contract RouterTest is Test {
             address(token0),
             address(weth),
             liquidity,
-            token0approveAmount - pair.MINIMUM_LIQUIDITY(),
+            token0ApprovedAmt - pair.MINIMUM_LIQUIDITY(),
             WETHapproveAmount - pair.MINIMUM_LIQUIDITY(),
             address(this),
             deadline
@@ -371,14 +371,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_removeLiquidityETHSupportingFeeOnTransferTokens() public {
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 WETHapproveAmount = 1e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         weth.approve(address(router), WETHapproveAmount);
 
         (,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
-            address(token0), token0approveAmount, 1e18, 1e18, address(this), deadline
+            address(token0), token0ApprovedAmt, 1e18, 1e18, address(this), deadline
         );
 
         address pairAddress = pairFactory.getPair(address(token0), address(weth));
@@ -388,7 +388,7 @@ contract RouterTest is Test {
         (uint256 _amountEth) = router.removeLiquidityETHSupportingFeeOnTransferTokens(
             address(token0),
             liquidity,
-            token0approveAmount - pair.MINIMUM_LIQUIDITY(),
+            token0ApprovedAmt - pair.MINIMUM_LIQUIDITY(),
             WETHapproveAmount - pair.MINIMUM_LIQUIDITY(),
             address(this),
             deadline
@@ -449,14 +449,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapExactTokensForTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -479,14 +479,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapTokensForExactTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -509,14 +509,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapExactETHForTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -539,14 +539,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapTokensForExactETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -569,14 +569,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapExactTokensForETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -596,14 +596,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapETHForExactTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -645,14 +645,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapExactETHForTokensSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -675,14 +675,14 @@ contract RouterTest is Test {
     }
 
     function test_ShouldBeSuccess_swapExactTokensForETHSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -710,19 +710,19 @@ contract RouterTest is Test {
         uint256 token1transferAmount = 1e18;
         _addLiquidity(token0transferAmount, token1transferAmount);
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 token1approveAmount = 2e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         token1.approve(address(router), token1approveAmount);
 
         vm.expectRevert(Router.InsufficientBAmount.selector);
         router.addLiquidity(
             address(token0),
             address(token1),
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
             address(this),
             deadline
@@ -734,10 +734,10 @@ contract RouterTest is Test {
         uint256 token1transferAmount = 1e18;
         _addLiquidity(token0transferAmount, token1transferAmount);
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 token1approveAmount = 2e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         token1.approve(address(router), token1approveAmount);
 
         vm.expectRevert(Router.InsufficientAAmount.selector);
@@ -745,9 +745,9 @@ contract RouterTest is Test {
             address(token0),
             address(token1),
             token1approveAmount,
-            token0approveAmount,
+            token0ApprovedAmt,
             token1approveAmount,
-            token0approveAmount,
+            token0ApprovedAmt,
             address(this),
             deadline
         );
@@ -765,13 +765,13 @@ contract RouterTest is Test {
 
         vm.startPrank(erc20Contarct);
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 WETHapproveAmount = 1e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         weth.approve(address(router), WETHapproveAmount);
 
-        router.addLiquidityETH{ value: 1e18 }(address(token0), token0approveAmount, 1e18, 1e18, erc20Contarct, deadline);
+        router.addLiquidityETH{ value: 1e18 }(address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contarct, deadline);
 
         token0.approve(address(router), 1e18);
         weth.approve(address(router), 2e18);
@@ -828,14 +828,14 @@ contract RouterTest is Test {
 
         vm.startPrank(erc20Contarct);
 
-        uint256 token0approveAmount = 1e18;
+        uint256 token0ApprovedAmt = 1e18;
         uint256 WETHapproveAmount = 1e18;
 
-        token0.approve(address(router), token0approveAmount);
+        token0.approve(address(router), token0ApprovedAmt);
         weth.approve(address(router), WETHapproveAmount);
 
         (,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
-            address(token0), token0approveAmount, 1e18, 1e18, erc20Contarct, deadline
+            address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contarct, deadline
         );
 
         address pairAddress = pairFactory.getPair(address(token0), address(weth));
@@ -846,7 +846,7 @@ contract RouterTest is Test {
         router.removeLiquidityETHSupportingFeeOnTransferTokens(
             address(token0),
             liquidity,
-            token0approveAmount - 10 ** 3,
+            token0ApprovedAmt - 10 ** 3,
             WETHapproveAmount - 10 ** 3,
             erc20Contarct,
             deadline
@@ -854,14 +854,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_insufficientOutputAmount_swapExactTokensForTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -879,14 +879,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_excessiveInputAmount_swapTokensForExactTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -907,14 +907,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_invalidPath_swapExactETHForTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -932,14 +932,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_insufficientOutputAmount_swapExactETHForTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -959,14 +959,14 @@ contract RouterTest is Test {
     //function test_Revert_unableToTransferWETH_swapExactETHForTokens() public { }
 
     function test_Revert_invalidPath_swapTokensForExactETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -987,14 +987,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_excessiveInputAmount_swapTokensForExactETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1025,14 +1025,14 @@ contract RouterTest is Test {
 
         vm.startPrank(erc20Contarct);
 
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, erc20Contarct, deadline
@@ -1053,14 +1053,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_invalidPath_swapExactTokensForETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1078,14 +1078,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_insufficientOutputAmount_swapExactTokensForETH() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1113,14 +1113,14 @@ contract RouterTest is Test {
 
         vm.startPrank(erc20Contarct);
 
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, erc20Contarct, deadline
@@ -1138,14 +1138,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_invalidPath_swapETHForExactTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1166,14 +1166,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_excessiveInputAmount_swapETHForExactTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1214,14 +1214,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_invalidPath_swapExactETHForTokensSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1241,14 +1241,14 @@ contract RouterTest is Test {
     //function test_Revert_unableToTransferWETH_swapExactETHForTokensSupportingFeeOnTransferTokens() public { }
 
     function test_Revert_insufficientOutputAmount_swapExactETHForTokensSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1268,14 +1268,14 @@ contract RouterTest is Test {
     //function test_Revert_unableToTransferWETH_swapExactTokensForETHSupportingFeeOnTransferTokens() public { }
 
     function test_Revert_invalidPath_swapExactTokensForETHSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline
@@ -1293,14 +1293,14 @@ contract RouterTest is Test {
     }
 
     function test_Revert_insufficientOutputAmount_swapExactTokensForETHSupportingFeeOnTransferTokens() public {
-        uint256 WETHTransferAmount = 1e18;
+        uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
         uint256 token1TransferAmount = 1e18;
 
         _addLiquidity(token0TransferAmount, token1TransferAmount);
 
         token1.approve(address(router), token1TransferAmount);
-        weth.approve(address(router), WETHTransferAmount);
+        weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
             address(token1), token1TransferAmount, 1e18, 1e18, address(this), deadline

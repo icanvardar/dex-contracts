@@ -12,10 +12,6 @@ import { MockERC20 } from "../mocks/MockERC20.sol";
 contract OrderTest is Test {
     using OrderLibrary for Order;
 
-    bytes32 public constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amountIn,uint256 amountOutMin,address[] path,address from,address to,uint256 deadline,uint256 timestamp)"
-    );
-
     address[] public path;
     uint256 public deadline;
     address public senderAddress;
@@ -120,7 +116,7 @@ contract OrderTest is Test {
     function _getPermitHash(Order memory order) private pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                ORDER_TYPEHASH,
+                OrderLibrary.ORDER_TYPEHASH,
                 order.amountIn,
                 order.amountOutMin,
                 keccak256(abi.encodePacked(order.path)),

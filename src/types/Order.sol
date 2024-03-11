@@ -49,7 +49,8 @@ library OrderLibrary {
      * @dev Type hash of the order struct
      */
     bytes32 public constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amountIn,uint256 amountOutMin,address[] path,address from,address to,uint256 deadline,uint256 timestamp)"
+        "Order(" "uint256 amountIn," "uint256 amountOutMin," "address[] path," "address from," "address to,"
+        "uint256 deadline," "uint256 timestamp" ")"
     );
 
     /*//////////////////////////////////////////////////////////////////////////
