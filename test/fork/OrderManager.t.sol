@@ -12,16 +12,13 @@ import { Router } from "../../src/helpers/Router.sol";
 import { PairFactory } from "../../src/core/PairFactory.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { OrderManager } from "../../src/utils/OrderManager.sol";
-import { ExecutionCall, ExecutionResult, Order } from "../../src/types/Order.sol";
+import { ExecutionCall, ExecutionResult, Order, OrderLibrary } from "../../src/types/Order.sol";
 
 contract OrderManager_Fork_Test is Test {
     uint256 public constant TOKEN_A_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
     uint256 public constant TOKEN_B_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
     uint8 public constant CHUNK_SIZE_LIMIT = 2;
     bytes32 public constant _DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-    bytes32 public constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amountIn,uint256 amountOutMin,address[] path,address from,address to,uint256 deadline,uint256 timestamp)"
-    );
 
     address public web2Service;
     address public feeToSetter;
@@ -190,7 +187,7 @@ contract OrderManager_Fork_Test is Test {
                 _getDomainSeperator(contractAdress, chainId),
                 keccak256(
                     abi.encode(
-                        ORDER_TYPEHASH,
+                        OrderLibrary.ORDER_TYPEHASH,
                         order.amountIn,
                         order.amountOutMin,
                         keccak256(abi.encodePacked(order.path)),

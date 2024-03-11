@@ -6,7 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
-import { Order } from "../../src/types/Order.sol";
+import { Order, OrderLibrary } from "../../src/types/Order.sol";
 import { RouterLib } from "../../src/libraries/RouterLib.sol";
 import { OrderManager } from "./../../src/utils/OrderManager.sol";
 
@@ -15,9 +15,6 @@ import { OrderValidatorHarness } from "../harness/OrderValidatorHarness.sol";
 
 contract OrderValidatorTest is Test {
     bytes32 public constant _DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-    bytes32 public constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amountIn,uint256 amountOutMin,address[] path,address from,address to,uint256 deadline,uint256 timestamp)"
-    );
 
     uint256 public deadline;
 
@@ -140,7 +137,7 @@ contract OrderValidatorTest is Test {
                 _getDomainSeperator(contractAdress),
                 keccak256(
                     abi.encode(
-                        ORDER_TYPEHASH,
+                        OrderLibrary.ORDER_TYPEHASH,
                         order.amountIn,
                         order.amountOutMin,
                         keccak256(abi.encodePacked(order.path)),
