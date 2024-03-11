@@ -4,8 +4,7 @@ pragma solidity 0.8.21;
 import { Test } from "forge-std/Test.sol";
 
 import { WETH } from "solady/tokens/WETH.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { Router } from "../../src/helpers/Router.sol";
@@ -36,8 +35,6 @@ contract OrderManager_Fork_Test is Test {
     IERC20 public token0;
     WETH public token1;
 
-    constructor() { }
-
     function setUp() public {
         vm.createSelectFork({ urlOrAlias: "mainnet" });
 
@@ -60,13 +57,13 @@ contract OrderManager_Fork_Test is Test {
         token0 = IERC20(_token0);
         token1 = WETH(payable(_token1));
 
+        token0Supply = token0.totalSupply();
+        token1Supply = token1.totalSupply();
+
         vm.prank(0x12EDE161c702D1494612d19f05992f43aa6A26FB);
         token0.transfer(address(this), 10e18);
 
         token1.deposit{ value: 10e18 }();
-
-        token0Supply = token0.totalSupply();
-        token1Supply = token1.totalSupply();
 
         assertEq(pair.token0(), _token0);
         assertEq(pair.token1(), _token1);
