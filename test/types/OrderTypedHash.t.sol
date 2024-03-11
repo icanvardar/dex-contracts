@@ -19,8 +19,6 @@ contract OrderTypedHashTest is Test {
     MockERC20 public token0;
     MockERC20 public token1;
 
-    constructor() { }
-
     function setUp() public {
         deadline = block.timestamp + 1;
 
