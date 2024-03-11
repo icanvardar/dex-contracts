@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import { Test } from "forge-std/Test.sol";
 
 import { WETH } from "solady/tokens/WETH.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { Pair } from "../../src/core/Pair.sol";
 import { Router } from "../../src/helpers/Router.sol";
@@ -16,7 +15,7 @@ import { MockERC20 } from "../mocks/MockERC20.sol";
 contract RouterTest is Test {
     uint256 public constant TOKEN_A_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
     uint256 public constant TOKEN_B_TOTAL_SUPPLY = 115_792_089_237_316_195_423_570_985e18;
-    bytes32 constant PERMIT_TYPEHASH =
+    bytes32 internal constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     address public feeTo;
@@ -36,8 +35,6 @@ contract RouterTest is Test {
     MockERC20 public token1;
 
     receive() external payable { }
-
-    constructor() { }
 
     function setUp() public {
         sender = vm.addr(1);
