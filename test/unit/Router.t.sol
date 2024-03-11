@@ -24,12 +24,12 @@ contract RouterTest is Test {
     uint256 public deadline;
     address public feeToSetter;
 
-    Pair pair;
-    WETH weth;
-    Router router;
-    MockERC20 tokenA;
-    MockERC20 tokenB;
-    PairFactory pairFactory;
+    Pair internal pair;
+    WETH internal weth;
+    Router internal router;
+    MockERC20 internal tokenA;
+    MockERC20 internal tokenB;
+    PairFactory internal pairFactory;
 
     //Ordered pair adress
     MockERC20 public token0;
@@ -172,10 +172,10 @@ contract RouterTest is Test {
 
     function test_ShouldBeSuccess_noPair_addLiquidityETH() public {
         uint256 token0ApprovedAmt = 1e18;
-        uint256 WETHapproveAmount = 2e18;
+        uint256 wethApprovedAmt = 2e18;
 
         token0.approve(address(router), token0ApprovedAmt);
-        weth.approve(address(router), WETHapproveAmount);
+        weth.approve(address(router), wethApprovedAmt);
 
         (uint256 amountA, uint256 amountB, uint256 secondLiquidity) = router.addLiquidityETH{ value: 2e18 }(
             address(token0), token0ApprovedAmt, 1e18, 1e17, address(this), deadline
@@ -222,10 +222,10 @@ contract RouterTest is Test {
 
     function test_ShouldBeSuccess_removeLiquidityETH() public {
         uint256 token0ApprovedAmt = 1e18;
-        uint256 WETHapproveAmount = 1e18;
+        uint256 wethApprovedAmt = 1e18;
 
         token0.approve(address(router), token0ApprovedAmt);
-        weth.approve(address(router), WETHapproveAmount);
+        weth.approve(address(router), wethApprovedAmt);
 
         (uint256 amountA,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
             address(token0), token0ApprovedAmt, 1e18, 1e18, address(this), deadline
@@ -240,7 +240,7 @@ contract RouterTest is Test {
             address(weth),
             liquidity,
             token0ApprovedAmt - pair.MINIMUM_LIQUIDITY(),
-            WETHapproveAmount - pair.MINIMUM_LIQUIDITY(),
+            wethApprovedAmt - pair.MINIMUM_LIQUIDITY(),
             address(this),
             deadline
         );
@@ -372,10 +372,10 @@ contract RouterTest is Test {
 
     function test_ShouldBeSuccess_removeLiquidityETHSupportingFeeOnTransferTokens() public {
         uint256 token0ApprovedAmt = 1e18;
-        uint256 WETHapproveAmount = 1e18;
+        uint256 wethApprovedAmt = 1e18;
 
         token0.approve(address(router), token0ApprovedAmt);
-        weth.approve(address(router), WETHapproveAmount);
+        weth.approve(address(router), wethApprovedAmt);
 
         (,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
             address(token0), token0ApprovedAmt, 1e18, 1e18, address(this), deadline
@@ -389,7 +389,7 @@ contract RouterTest is Test {
             address(token0),
             liquidity,
             token0ApprovedAmt - pair.MINIMUM_LIQUIDITY(),
-            WETHapproveAmount - pair.MINIMUM_LIQUIDITY(),
+            wethApprovedAmt - pair.MINIMUM_LIQUIDITY(),
             address(this),
             deadline
         );
@@ -756,28 +756,28 @@ contract RouterTest is Test {
     //function test_Revert_UnableToTransferWETH_addLiquidityETH() public { }
 
     function test_Revert_UnableToSendEther_addLiquidityETH() public {
-        address erc20Contarct = makeAddr("erc20Contarct");
-        vm.etch(erc20Contarct, "1");
+        address erc20Contract = makeAddr("erc20Contract");
+        vm.etch(erc20Contract, "1");
 
-        vm.deal(erc20Contarct, 5e18);
-        token0.transfer(erc20Contarct, 5e18);
-        weth.transfer(erc20Contarct, 5e18);
+        vm.deal(erc20Contract, 5e18);
+        token0.transfer(erc20Contract, 5e18);
+        weth.transfer(erc20Contract, 5e18);
 
-        vm.startPrank(erc20Contarct);
+        vm.startPrank(erc20Contract);
 
         uint256 token0ApprovedAmt = 1e18;
-        uint256 WETHapproveAmount = 1e18;
+        uint256 wethApprovedAmt = 1e18;
 
         token0.approve(address(router), token0ApprovedAmt);
-        weth.approve(address(router), WETHapproveAmount);
+        weth.approve(address(router), wethApprovedAmt);
 
-        router.addLiquidityETH{ value: 1e18 }(address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contarct, deadline);
+        router.addLiquidityETH{ value: 1e18 }(address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contract, deadline);
 
         token0.approve(address(router), 1e18);
         weth.approve(address(router), 2e18);
 
         vm.expectRevert(Router.UnableToSendEther.selector);
-        router.addLiquidityETH{ value: 1e18 }(address(token0), 1e17, 1e18, 1e17, erc20Contarct, deadline);
+        router.addLiquidityETH{ value: 1e18 }(address(token0), 1e17, 1e18, 1e17, erc20Contract, deadline);
     }
 
     function test_Revert_insufficientAAmount_removeLiquidity() public {
@@ -819,23 +819,23 @@ contract RouterTest is Test {
     }
 
     function test_Revert_unableToSendEther_removeLiquidityETHSupportingFeeOnTransferTokens() public {
-        address erc20Contarct = makeAddr("erc20Contarct");
-        vm.etch(erc20Contarct, "1");
+        address erc20Contract = makeAddr("erc20Contract");
+        vm.etch(erc20Contract, "1");
 
-        vm.deal(erc20Contarct, 1e18);
-        token0.transfer(erc20Contarct, 5e18);
-        weth.transfer(erc20Contarct, 5e18);
+        vm.deal(erc20Contract, 1e18);
+        token0.transfer(erc20Contract, 5e18);
+        weth.transfer(erc20Contract, 5e18);
 
-        vm.startPrank(erc20Contarct);
+        vm.startPrank(erc20Contract);
 
         uint256 token0ApprovedAmt = 1e18;
-        uint256 WETHapproveAmount = 1e18;
+        uint256 wethApprovedAmt = 1e18;
 
         token0.approve(address(router), token0ApprovedAmt);
-        weth.approve(address(router), WETHapproveAmount);
+        weth.approve(address(router), wethApprovedAmt);
 
         (,, uint256 liquidity) = router.addLiquidityETH{ value: 1e18 }(
-            address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contarct, deadline
+            address(token0), token0ApprovedAmt, 1e18, 1e18, erc20Contract, deadline
         );
 
         address pairAddress = pairFactory.getPair(address(token0), address(weth));
@@ -844,12 +844,7 @@ contract RouterTest is Test {
 
         vm.expectRevert(Router.UnableToSendEther.selector);
         router.removeLiquidityETHSupportingFeeOnTransferTokens(
-            address(token0),
-            liquidity,
-            token0ApprovedAmt - 10 ** 3,
-            WETHapproveAmount - 10 ** 3,
-            erc20Contarct,
-            deadline
+            address(token0), liquidity, token0ApprovedAmt - 10 ** 3, wethApprovedAmt - 10 ** 3, erc20Contract, deadline
         );
     }
 
@@ -1015,15 +1010,15 @@ contract RouterTest is Test {
     }
 
     function test_Revert_unableToSendEther_swapTokensForExactETH() public {
-        address erc20Contarct = makeAddr("erc20Contarct");
-        vm.etch(erc20Contarct, "1");
+        address erc20Contract = makeAddr("erc20Contract");
+        vm.etch(erc20Contract, "1");
 
-        vm.deal(erc20Contarct, 1e18);
-        token0.transfer(erc20Contarct, 5e18);
-        token1.transfer(erc20Contarct, 5e18);
-        weth.transfer(erc20Contarct, 5e18);
+        vm.deal(erc20Contract, 1e18);
+        token0.transfer(erc20Contract, 5e18);
+        token1.transfer(erc20Contract, 5e18);
+        weth.transfer(erc20Contract, 5e18);
 
-        vm.startPrank(erc20Contarct);
+        vm.startPrank(erc20Contract);
 
         uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
@@ -1035,7 +1030,7 @@ contract RouterTest is Test {
         weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
-            address(token1), token1TransferAmount, 1e18, 1e18, erc20Contarct, deadline
+            address(token1), token1TransferAmount, 1e18, 1e18, erc20Contract, deadline
         );
 
         address[] memory path = new address[](3);
@@ -1049,7 +1044,7 @@ contract RouterTest is Test {
         token0.approve(address(router), 3e17);
 
         vm.expectRevert(Router.UnableToSendEther.selector);
-        router.swapTokensForExactETH(amount2Out, 3e17, path, erc20Contarct, deadline);
+        router.swapTokensForExactETH(amount2Out, 3e17, path, erc20Contract, deadline);
     }
 
     function test_Revert_invalidPath_swapExactTokensForETH() public {
@@ -1103,15 +1098,15 @@ contract RouterTest is Test {
     }
 
     function test_Revert_unableToSendEther_swapExactTokensForETH() public {
-        address erc20Contarct = makeAddr("erc20Contarct");
-        vm.etch(erc20Contarct, "1");
+        address erc20Contract = makeAddr("erc20Contract");
+        vm.etch(erc20Contract, "1");
 
-        vm.deal(erc20Contarct, 1e18);
-        token0.transfer(erc20Contarct, 5e18);
-        token1.transfer(erc20Contarct, 5e18);
-        weth.transfer(erc20Contarct, 5e18);
+        vm.deal(erc20Contract, 1e18);
+        token0.transfer(erc20Contract, 5e18);
+        token1.transfer(erc20Contract, 5e18);
+        weth.transfer(erc20Contract, 5e18);
 
-        vm.startPrank(erc20Contarct);
+        vm.startPrank(erc20Contract);
 
         uint256 wethTransferredAmt = 1e18;
         uint256 token0TransferAmount = 1e18;
@@ -1123,7 +1118,7 @@ contract RouterTest is Test {
         weth.approve(address(router), wethTransferredAmt);
 
         router.addLiquidityETH{ value: 1e18 }(
-            address(token1), token1TransferAmount, 1e18, 1e18, erc20Contarct, deadline
+            address(token1), token1TransferAmount, 1e18, 1e18, erc20Contract, deadline
         );
 
         address[] memory path = new address[](3);
@@ -1134,7 +1129,7 @@ contract RouterTest is Test {
         token0.approve(address(router), 3e17);
 
         vm.expectRevert(Router.UnableToSendEther.selector);
-        router.swapExactTokensForETH(3e17, 1e17, path, erc20Contarct, deadline);
+        router.swapExactTokensForETH(3e17, 1e17, path, erc20Contract, deadline);
     }
 
     function test_Revert_invalidPath_swapETHForExactTokens() public {
