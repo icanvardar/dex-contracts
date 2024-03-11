@@ -4,6 +4,7 @@ cache
 coverage
 node_modules
 out
+tmp
 
 # files
 *.env
@@ -15,4 +16,3 @@ lcov.info
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
-tmp/addresses.json
