@@ -5,8 +5,6 @@ import { OrderValidator } from "../../src/helpers/OrderValidator.sol";
 import { Order } from "../../src/types/Order.sol";
 
 contract OrderValidatorHarness is OrderValidator {
-    constructor() { }
-
     function exposed_signatures(bytes memory signature) external view returns (bool) {
         return signatures[signature];
     }
