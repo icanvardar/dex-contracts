@@ -1,8 +1,7 @@
 MIT License
 
-Copyright (c) 2024 [Can Vardar](https://github.com/icanvardar)
-Copyright (c) 2024 [Mehmet Rauf Oğuz](https://github.com/mehmetraufoguz)
-Copyright (c) 2024 [Whiskey](https://github.com/whisskey)
+Copyright (c) 2024 [Can Vardar](https://github.com/icanvardar) Copyright (c) 2024
+[Mehmet Rauf Oğuz](https://github.com/mehmetraufoguz) Copyright (c) 2024 [Whiskey](https://github.com/whisskey)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
