@@ -67,12 +67,12 @@ contract Router is IRouter {
 
     /**
      * @dev Constructor to initialize the Router with the factory and WETH addresses.
-     * @param _factory Address of the factory contract.
-     * @param _WETH Address of the Wrapped Ether (WETH) contract.
+     * @param factoryAddress Address of the factory contract.
+     * @param wethAddress Address of the Wrapped Ether (WETH) contract.
      */
-    constructor(address _factory, address _WETH) {
-        factory = _factory;
-        WETH = _WETH;
+    constructor(address factoryAddress, address wethAddress) {
+        factory = factoryAddress;
+        WETH = wethAddress;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
