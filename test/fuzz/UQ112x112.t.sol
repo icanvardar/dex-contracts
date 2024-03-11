@@ -10,10 +10,6 @@ import { SafeCastLib } from "solady/utils/SafeCastLib.sol";
 contract UQ112x112FuzzTest is Test {
     using SafeCastLib for uint112;
 
-    constructor() { }
-
-    function setUp() public { }
-
     function test_ShouldBeSuccess_Encode(uint112 value) public {
         uint224 encoded = UQ112x112.encode(value);
 
