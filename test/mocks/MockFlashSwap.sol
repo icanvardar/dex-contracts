@@ -12,8 +12,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract MockFlashSwap is ICallee {
     uint256 private expectedLoanAmount;
 
-    constructor() { }
-
     /**
      * @dev flashSwap function. This function is called uniswap pair contract. we requested to borrow.
      * @param pairAddress Pair address of uniswap.
