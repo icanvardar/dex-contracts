@@ -7,26 +7,30 @@ import { OrderManager } from "../src/utils/OrderManager.sol";
 import { MockERC20 } from "../test/mocks/MockERC20.sol";
 import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "./../src/libraries/RouterLib.sol";
-import { console } from "forge-std/console.sol";
 
 import { BaseScript } from "./Base.s.sol";
 
 contract Deploy is BaseScript {
-    uint8 public constant CHUNK_SIZE_LIMIT = 10;
+    struct DeploymentResult {
+        address factory;
+        address router;
+        address orderManager;
+        address weth;
+        address[3] mockPairs;
+    }
 
-    uint256 public deadline;
+    PairFactory public factory;
+    Router public router;
+    OrderManager public orderManager;
+    WETH public weth;
 
     receive() external payable { }
 
-    function run()
-        public
-        broadcast
-        returns (PairFactory factory, Router router, OrderManager orderManager, address mockPairAddress)
-    {
-        WETH weth;
-        mockPairAddress = address(0);
+    function run() public broadcast returns (DeploymentResult memory deploymentResult) {
         bool mocksEnabled =
             keccak256(abi.encodePacked(vm.envString("DEPLOY_MODE"))) == keccak256(abi.encodePacked(("test")));
+        
+        uint8 CHUNK_SIZE_LIMIT = uint8(vm.envUint("CHUNK_SIZE_LIMIT"));
 
         if (mocksEnabled) {
             weth = new WETH();
@@ -41,34 +45,61 @@ contract Deploy is BaseScript {
 
         orderManager.addExecutor(vm.envAddress("EXECUTOR"));
 
+        deploymentResult.factory = address(factory);
+        deploymentResult.router = address(router);
+        deploymentResult.orderManager = address(orderManager);
+        deploymentResult.weth = address(weth);
+
         if (mocksEnabled) {
-            MockERC20 tokenA = new MockERC20("tokenA", "TA");
-            MockERC20 tokenB = new MockERC20("tokenB", "TB");
+            MockERC20 mockUsdt = new MockERC20("MockUSDT", "MUSDT");
+            MockERC20 mockDai = new MockERC20("MockDAI", "MDAI");
 
-            uint256 token0LiquidityAmt = 1_000_000e18;
-            uint256 token1LiquidityAmt = 1_000_000e18;
+            uint256 mockUsdtLiquidityAmt = 132_000e18;
+            uint256 mockDaiLiquidityAmt = 132_000e18;
+            uint256 wethLiquidityAmt = 32e18;
 
-            tokenA.approve(address(router), token0LiquidityAmt);
-            tokenB.approve(address(router), token1LiquidityAmt);
+            // MockUSDT MockDAI 100_000 100_000
+            // WETH MockUSDT 16 32_000
+            // WETH MockDAI 16 32_000
 
-            _addMockLiquidity(
-                router,
-                tokenA,
-                tokenB,
-                token0LiquidityAmt,
-                token1LiquidityAmt,
-                vm.envAddress("LIQUIDITY_TO"),
-                block.timestamp + 1000
-            );
+            mockUsdt.approve(address(router), mockUsdtLiquidityAmt);
+            mockDai.approve(address(router), mockDaiLiquidityAmt);
+            weth.approve(address(router), wethLiquidityAmt);
 
-            mockPairAddress = RouterLib.pairFor(address(factory), address(tokenA), address(tokenB));
+            address[2] memory firstPairAssets = [address(mockUsdt), address(mockDai)];
+            address[2] memory secondPairAssets = [address(weth), address(mockUsdt)];
+            address[2] memory thirdPairAssets = [address(weth), address(mockDai)];
+
+            address[2][3] memory pairAssets = [firstPairAssets, secondPairAssets, thirdPairAssets];
+
+            uint256[2] memory firstPairAmts = [uint256(100_000e18), uint256(100_000e18)];
+            uint256[2] memory secondPairAmts = [uint256(16e18), uint256(32_000e18)];
+            uint256[2] memory thirdPairAmts = [uint256(16e18), uint256(32_000e18)];
+
+            uint256[2][3] memory pairAmts = [firstPairAmts, secondPairAmts, thirdPairAmts];
+
+            deploymentResult.mockPairs[0] = RouterLib.pairFor(address(factory), address(mockUsdt), address(mockDai));
+            deploymentResult.mockPairs[1] = RouterLib.pairFor(address(factory), address(weth), address(mockUsdt));
+            deploymentResult.mockPairs[2] = RouterLib.pairFor(address(factory), address(weth), address(mockDai));
+
+            uint8 i = 0;
+            for (i; i < pairAssets.length; i++) {
+                address tokenA = pairAssets[i][0];
+                address tokenB = pairAssets[i][1];
+                uint256 tokenAAmt = pairAmts[i][0];
+                uint256 tokenBAmt = pairAmts[i][1];
+
+                _addMockLiquidity(
+                    router, tokenA, tokenB, tokenAAmt, tokenBAmt, vm.envAddress("LIQUIDITY_TO"), block.timestamp + 1000
+                );
+            }
         }
     }
 
     function _addMockLiquidity(
         Router _router,
-        MockERC20 _tokenA,
-        MockERC20 _tokenB,
+        address _tokenA,
+        address _tokenB,
         uint256 _tokenALiquidityAmount,
         uint256 _tokenBLiquidityAmount,
         address _liquidityTo,
@@ -78,8 +109,8 @@ contract Deploy is BaseScript {
         returns (uint256 amountA, uint256 amountB, uint256 liquidity)
     {
         (amountA, amountB, liquidity) = _router.addLiquidity(
-            address(_tokenA),
-            address(_tokenB),
+            _tokenA,
+            _tokenB,
             _tokenALiquidityAmount,
             _tokenBLiquidityAmount,
             _tokenALiquidityAmount,
