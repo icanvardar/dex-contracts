@@ -7,108 +7,125 @@ import { OrderManager } from "../src/utils/OrderManager.sol";
 import { MockERC20 } from "../test/mocks/MockERC20.sol";
 import { WETH } from "solady/tokens/WETH.sol";
 import { RouterLib } from "./../src/libraries/RouterLib.sol";
-import { stdJson } from "forge-std/StdJson.sol";
 import { console } from "forge-std/console.sol";
 
 import { BaseScript } from "./Base.s.sol";
 
 contract Deploy is BaseScript {
-    struct AddressPayload {
-        address feeToSetter;
+    struct DeploymentResult {
+        address factory;
+        address router;
+        address orderManager;
         address weth;
+        address[] mockPairs;
     }
 
-    uint8 public constant CHUNK_SIZE_LIMIT = 10;
-
-    uint256 public deadline;
-
+    PairFactory public factory;
+    Router public router;
+    OrderManager public orderManager;
     WETH public weth;
-    MockERC20 public tokenA;
-    MockERC20 public tokenB;
-
-    error UndefinedArgs();
+    address[] public mockPairs;
 
     receive() external payable { }
 
-    function concatenateStringAndUint256(string memory str, uint256 num) public pure returns (string memory) {
-        // Concatenate the two strings
-        string memory result = string(abi.encodePacked(str, vm.toString(num)));
+    function run() public broadcast returns (DeploymentResult memory deploymentResult) {
+        string memory deployMode;
 
-        return result;
-    }
-
-    function readAddressesFromFile() public view returns (AddressPayload memory addressPayload) {
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/tmp/addresses.json");
-        string memory json = vm.readFile(path);
-        bytes memory addresses = stdJson.parseRaw(json, concatenateStringAndUint256(".", block.chainid));
-        addressPayload = abi.decode(addresses, (AddressPayload));
-    }
-
-    function run()
-        public
-        broadcast
-        returns (PairFactory factory, Router router, OrderManager orderManager, address createdPairAddress)
-    {
-        AddressPayload memory addressPayload = readAddressesFromFile();
-        address feeToSetter = addressPayload.feeToSetter;
-        deadline = block.timestamp + 1000;
-        uint256 token0TransferAmount = 1_000_000e18;
-        uint256 token1TransferAmount = 1_000_000e18;
-
-        // TODO: Refactor this condition due to the fact that unordered json reading
-        address wethAddress = addressPayload.weth;
-        if (wethAddress == address(0) || feeToSetter == address(0)) {
-            revert UndefinedArgs();
+        try vm.envString("DEPLOY_MODE") returns (string memory mode) {
+            deployMode = mode;
+        } catch {
+            console.log("DEPLOY_MODE variable not found, automatically switched to production mode!");
         }
 
-        weth = new WETH();
+        bool mocksEnabled = keccak256(abi.encodePacked(deployMode)) == keccak256(abi.encodePacked(("test")));
 
-        weth.deposit{ value: 5e18 }();
+        uint8 chunkSizeLimit = uint8(vm.envUint("CHUNK_SIZE_LIMIT"));
 
-        factory = new PairFactory(feeToSetter);
+        if (mocksEnabled) {
+            weth = new WETH();
+            weth.deposit{ value: 32e18 }();
+        } else {
+            weth = WETH(payable(vm.envAddress("WETH_ADDRESS")));
+        }
+
+        factory = new PairFactory(vm.envAddress("FEE_TO_SETTER"));
         router = new Router(address(factory), address(weth));
-        orderManager = new OrderManager(address(factory), CHUNK_SIZE_LIMIT);
+        orderManager = new OrderManager(address(factory), chunkSizeLimit);
 
-        orderManager.addExecutor(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+        orderManager.addExecutor(vm.envAddress("EXECUTOR"));
 
-        string memory deployMode = vm.envString("DEPLOY_MODE");
+        if (mocksEnabled) {
+            MockERC20 mockUsdt = new MockERC20("MockUSDT", "MUSDT");
+            MockERC20 mockDai = new MockERC20("MockDAI", "MDAI");
 
-        if (keccak256(abi.encodePacked(deployMode)) == keccak256(abi.encodePacked(("test")))) {
-            console.log(
-                "/* ////////////////////////////////////////////////////////// */\n",
-                "/*                  Running Test Deploy Mode                  */\n",
-                "/* ////////////////////////////////////////////////////////// */\n"
-            );
+            uint256 mockUsdtLiquidityAmt = 132_000e18;
+            uint256 mockDaiLiquidityAmt = 132_000e18;
+            uint256 wethLiquidityAmt = 32e18;
 
-            tokenA = new MockERC20("tokenA", "TA");
-            tokenB = new MockERC20("tokenB", "TB");
+            // MockUSDT MockDAI 100_000 100_000
+            // WETH MockUSDT 16 32_000
+            // WETH MockDAI 16 32_000
 
-            _addLiquidity(router, token0TransferAmount, token1TransferAmount);
+            mockUsdt.approve(address(router), mockUsdtLiquidityAmt);
+            mockDai.approve(address(router), mockDaiLiquidityAmt);
+            weth.approve(address(router), wethLiquidityAmt);
 
-            createdPairAddress = RouterLib.pairFor(address(factory), address(tokenA), address(tokenB));
+            address[2] memory firstPairAssets = [address(mockUsdt), address(mockDai)];
+            address[2] memory secondPairAssets = [address(weth), address(mockUsdt)];
+            address[2] memory thirdPairAssets = [address(weth), address(mockDai)];
+
+            address[2][3] memory pairAssets = [firstPairAssets, secondPairAssets, thirdPairAssets];
+
+            uint256[2] memory firstPairAmts = [uint256(100_000e18), uint256(100_000e18)];
+            uint256[2] memory secondPairAmts = [uint256(16e18), uint256(32_000e18)];
+            uint256[2] memory thirdPairAmts = [uint256(16e18), uint256(32_000e18)];
+
+            uint256[2][3] memory pairAmts = [firstPairAmts, secondPairAmts, thirdPairAmts];
+
+            uint8 i = 0;
+            for (i; i < pairAssets.length; i++) {
+                address tokenA = pairAssets[i][0];
+                address tokenB = pairAssets[i][1];
+                uint256 tokenAAmt = pairAmts[i][0];
+                uint256 tokenBAmt = pairAmts[i][1];
+
+                address mockPairAddress = _addMockLiquidity(
+                    router, tokenA, tokenB, tokenAAmt, tokenBAmt, vm.envAddress("LIQUIDITY_TO"), block.timestamp + 1000
+                );
+                mockPairs.push(mockPairAddress);
+            }
         }
+
+        deploymentResult.factory = address(factory);
+        deploymentResult.router = address(router);
+        deploymentResult.orderManager = address(orderManager);
+        deploymentResult.weth = address(weth);
+        deploymentResult.mockPairs = mockPairs;
     }
 
-    function _addLiquidity(
+    function _addMockLiquidity(
         Router _router,
-        uint256 _tokenAAmount,
-        uint256 _tokenBAmount
+        address _tokenA,
+        address _tokenB,
+        uint256 _tokenALiquidityAmount,
+        uint256 _tokenBLiquidityAmount,
+        address _liquidityTo,
+        uint256 _deadline
     )
         private
-        returns (uint256 amountA, uint256 amountB, uint256 liquidity)
+        returns (address pairAddress)
     {
-        tokenA.approve(address(_router), _tokenAAmount);
-        tokenB.approve(address(_router), _tokenBAmount);
-        (amountA, amountB, liquidity) = _router.addLiquidity(
-            address(tokenA),
-            address(tokenB),
-            _tokenAAmount,
-            _tokenBAmount,
-            _tokenAAmount,
-            _tokenBAmount,
-            0x70997970C51812dc3A010C7d01b50e0d17dc79C8,
-            deadline
+        _router.addLiquidity(
+            _tokenA,
+            _tokenB,
+            _tokenALiquidityAmount,
+            _tokenBLiquidityAmount,
+            _tokenALiquidityAmount,
+            _tokenBLiquidityAmount,
+            _liquidityTo,
+            _deadline
         );
+
+        pairAddress = RouterLib.pairFor(address(factory), address(_tokenA), address(_tokenB));
     }
 }
